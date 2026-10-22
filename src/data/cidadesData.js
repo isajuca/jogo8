@@ -1,163 +1,163 @@
-// As 20 casas do perímetro do tabuleiro "Cidades Inteligentes" (sentido horário a partir do Início)
+// As 20 casas do perímetro do tabuleiro "Cidades Inteligentes" (grade 6x6, sentido horário a partir do Início)
 export const BOARD_SPACES = [
   {
     index: 0,
     nome: "Início",
     tipo: "inicio",
-    x: 8.5,
-    y: 91.5,
+    x: 8.33,
+    y: 91.67,
     descricao: "Ponto de partida! A cada volta completa passando pelo Início, você ganha 1 peça do Quebra-Cabeça Cidades Inteligentes (total de 3 peças)."
   },
   {
     index: 1,
     nome: "Progresso ou Regresso",
     tipo: "progresso_regresso",
-    x: 8.5,
-    y: 74.9,
+    x: 8.33,
+    y: 75.0,
     descricao: "Sorteie uma carta do monte de Progresso Sustentável ou Regresso Ambiental!"
   },
   {
     index: 2,
     nome: "Progresso ou Regresso",
     tipo: "progresso_regresso",
-    x: 8.5,
-    y: 58.3,
+    x: 8.33,
+    y: 58.33,
     descricao: "Sorteie uma carta do monte de Progresso Sustentável ou Regresso Ambiental!"
   },
   {
     index: 3,
     nome: "Espaço STEAM+",
     tipo: "steam",
-    x: 8.5,
-    y: 41.7,
+    x: 8.33,
+    y: 41.67,
     descricao: "Inovação e Tecnologia Sustentável! Sua cidade investiu em pesquisa STEAM e você ganhou +2 Créditos Verdes!"
   },
   {
     index: 4,
     nome: "Carta de Ação",
     tipo: "acao",
-    x: 8.5,
-    y: 25.1,
+    x: 8.33,
+    y: 25.0,
     descricao: "Hora de agir! Responda ao desafio de Quiz, Criatividade, Debate ou Ação Cidadã para ganhar Créditos Verdes!"
   },
   {
     index: 5,
     nome: "Momento de Descanso",
     tipo: "descanso",
-    x: 8.5,
-    y: 8.5,
+    x: 8.33,
+    y: 8.33,
     descricao: "Momento de descanso sob o arco-íris! Respire ar puro na cidade sustentável."
   },
   {
     index: 6,
     nome: "Carta de Ação",
     tipo: "acao",
-    x: 25.1,
-    y: 8.5,
+    x: 25.0,
+    y: 8.33,
     descricao: "Hora de agir! Responda ao desafio de Quiz, Criatividade, Debate ou Ação Cidadã para ganhar Créditos Verdes!"
   },
   {
     index: 7,
     nome: "Passeio no Parque",
     tipo: "parque",
-    x: 41.7,
-    y: 8.5,
-    descricao: "Você chegou ao parque! Aproveite o passeio na área verde (conta como +1 rodada de descanso)."
+    x: 41.67,
+    y: 8.33,
+    descricao: "Você chegou ao parque! Aproveite o passeio na área verde e descanse por 1 rodada."
   },
   {
     index: 8,
     nome: "Progresso ou Regresso",
     tipo: "progresso_regresso",
-    x: 58.3,
-    y: 8.5,
+    x: 58.33,
+    y: 8.33,
     descricao: "Sorteie uma carta do monte de Progresso Sustentável ou Regresso Ambiental!"
   },
   {
     index: 9,
     nome: "Pedal Sustentável",
     tipo: "bike_avance3",
-    x: 74.9,
-    y: 8.5,
-    descricao: "Você andou de bike e não emitiu nenhum CO₂! Avance 3 casas!"
+    x: 75.0,
+    y: 8.33,
+    descricao: "Você andou de bike e não emitiu nenhum CO₂! Ganhe +2 Créditos Verdes e avance 3 casas!"
   },
   {
     index: 10,
     nome: "Momento de Descanso",
     tipo: "descanso",
-    x: 91.5,
-    y: 8.5,
+    x: 91.67,
+    y: 8.33,
     descricao: "Momento de descanso! Aprecie os espaços públicos planejados da cidade."
   },
   {
     index: 11,
     nome: "Carta de Ação",
     tipo: "acao",
-    x: 91.5,
-    y: 25.1,
+    x: 91.67,
+    y: 25.0,
     descricao: "Hora de agir! Responda ao desafio de Quiz, Criatividade, Debate ou Ação Cidadã para ganhar Créditos Verdes!"
   },
   {
     index: 12,
     nome: "Descarte Incorreto",
     tipo: "lixo_volte2",
-    x: 91.5,
-    y: 41.7,
-    descricao: "Você não descartou o lixo corretamente. Volte 2 casas!"
+    x: 91.67,
+    y: 41.67,
+    descricao: "Você não descartou o lixo corretamente. Volte 2 casas para o Momento de Descanso!"
   },
   {
     index: 13,
     nome: "Espaço STEAM+",
     tipo: "steam",
-    x: 91.5,
-    y: 58.3,
+    x: 91.67,
+    y: 58.33,
     descricao: "Inovação e Tecnologia Sustentável! Sua cidade investiu em soluções inteligentes e você ganhou +2 Créditos Verdes!"
   },
   {
     index: 14,
     nome: "Progresso ou Regresso",
     tipo: "progresso_regresso",
-    x: 91.5,
-    y: 74.9,
+    x: 91.67,
+    y: 75.0,
     descricao: "Sorteie uma carta do monte de Progresso Sustentável ou Regresso Ambiental!"
   },
   {
     index: 15,
     nome: "Momento de Descanso",
     tipo: "descanso",
-    x: 91.5,
-    y: 91.5,
+    x: 91.67,
+    y: 91.67,
     descricao: "Momento de descanso! Aproveite a tranquilidade de uma cidade bem planejada."
   },
   {
     index: 16,
     nome: "Compartilhando Saberes",
     tipo: "estudo_jogue_novamente",
-    x: 74.9,
-    y: 91.5,
-    descricao: "Você estudou sobre as cidades inteligentes e está compartilhando sobre o assunto com outras pessoas! Ganhe +2 Créditos Verdes e jogue novamente!"
+    x: 75.0,
+    y: 91.67,
+    descricao: "Você estudou sobre as cidades inteligentes e está compartilhando sobre o assunto com outras pessoas! Ganhe +2 Créditos Verdes e jogue o dado novamente!"
   },
   {
     index: 17,
     nome: "Carta de Ação",
     tipo: "acao",
-    x: 58.3,
-    y: 91.5,
+    x: 58.33,
+    y: 91.67,
     descricao: "Hora de agir! Responda ao desafio de Quiz, Criatividade, Debate ou Ação Cidadã para ganhar Créditos Verdes!"
   },
   {
     index: 18,
     nome: "Progresso ou Regresso",
     tipo: "progresso_regresso",
-    x: 41.7,
-    y: 91.5,
+    x: 41.67,
+    y: 91.67,
     descricao: "Sorteie uma carta do monte de Progresso Sustentável ou Regresso Ambiental!"
   },
   {
     index: 19,
     nome: "Carta de Ação",
     tipo: "acao",
-    x: 25.1,
-    y: 91.5,
+    x: 25.0,
+    y: 91.67,
     descricao: "Hora de agir! Responda ao desafio de Quiz, Criatividade, Debate ou Ação Cidadã para ganhar Créditos Verdes!"
   }
 ];
