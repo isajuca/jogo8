@@ -38,6 +38,11 @@ import {
   SMART_CITIES_DEFINITION
 } from './data/cidadesData';
 import { RoomConnectionManager } from './multiplayer/roomSync';
+import {
+  registrarXpNoBanco,
+  buscarRankingDoBanco,
+  limparRankingTurmaNoBanco
+} from './services/xpApi';
 
 // 4 Peões Vetoriais disponíveis para os até 4 jogadores da sala (100% sem emojis)
 export const PAWN_OPTIONS = [
@@ -187,6 +192,23 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('cidades_inteligentes_ranking_v1', JSON.stringify(ranking));
   }, [ranking]);
+
+  useEffect(() => {
+    buscarRankingDoBanco('jogo8').then((dbRanking) => {
+      if (dbRanking && dbRanking.length > 0) {
+        const mapped = dbRanking.map((r) => ({
+          id: r.id,
+          name: r.name,
+          turma: r.turma,
+          credits: r.score,
+          xpGanho: r.xpGanho,
+          turns: 1,
+          puzzlePieces: r.correct ?? 3
+        }));
+        setRanking(mapped);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -848,14 +870,27 @@ export default function App() {
     setActiveEvent(null);
     setTurnReadyToAdvance(false);
 
-    const newEntries = updatedPlayers.map((p, i) => ({
-      id: Date.now() + i,
-      name: p.name,
-      turma: p.turma,
-      credits: p.credits,
-      turns: p.turns || 1,
-      puzzlePieces: p.puzzlePieces
-    }));
+    const newEntries = updatedPlayers.map((p, i) => {
+      const xpCalculado = Math.max(80, (p.credits || 0) * 50 + (p.puzzlePieces || 0) * 100);
+      registrarXpNoBanco({
+        nome: p.name,
+        turma: p.turma,
+        jogo: 'jogo8',
+        pontuacao: p.credits,
+        xpGanho: xpCalculado,
+        acertos: p.puzzlePieces || 0,
+        detalhes: `${p.credits} Créditos Verdes • ${p.puzzlePieces || 0}/3 Peças do Quebra-Cabeça`
+      });
+      return {
+        id: Date.now() + i,
+        name: p.name,
+        turma: p.turma,
+        credits: p.credits,
+        xpGanho: xpCalculado,
+        turns: p.turns || 1,
+        puzzlePieces: p.puzzlePieces
+      };
+    });
 
     setRanking((prev) => [...prev, ...newEntries].sort((a, b) => b.credits - a.credits));
 
@@ -920,6 +955,7 @@ export default function App() {
 
   const clearClassRanking = (turmaAlvo) => {
     setRanking((prev) => prev.filter((item) => item.turma !== turmaAlvo));
+    limparRankingTurmaNoBanco('jogo8', turmaAlvo);
   };
 
   const ranking8A = ranking.filter((r) => r.turma === '8º A');
@@ -1694,7 +1730,9 @@ export default function App() {
                             <div style={{ flex: 1 }}>
                               <strong>{p.name}</strong> <small>({p.turma})</small>
                             </div>
-                            <span className="podium-credits">{p.credits} créditos</span>
+                            <span className="podium-credits">
+                              {p.credits} créditos • +{Math.max(80, (p.credits || 0) * 50 + (p.puzzlePieces || 0) * 100)} XP
+                            </span>
                           </div>
                         );
                       })}
