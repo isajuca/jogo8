@@ -41,7 +41,7 @@ import { RoomConnectionManager } from './multiplayer/roomSync';
 import {
   registrarXpNoBanco,
   buscarRankingDoBanco,
-  limparRankingTurmaNoBanco
+  filtrarRankingExpirado
 } from './services/xpApi';
 
 // 4 Peões Vetoriais disponíveis para os até 4 jogadores da sala (100% sem emojis)
@@ -154,7 +154,7 @@ export default function App() {
   // Rankings separados para 8º A e 8º B
   const [ranking, setRanking] = useState(() => {
     const saved = localStorage.getItem('cidades_inteligentes_ranking_v1');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? filtrarRankingExpirado(JSON.parse(saved)) : [];
   });
 
   // Estado Sincronizado da Partida (Host é a fonte da verdade e transmite aos Guests)
@@ -194,6 +194,19 @@ export default function App() {
   }, [ranking]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setRanking((prev) => filtrarRankingExpirado(prev));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (showRankingModal) {
+      setRanking((prev) => filtrarRankingExpirado(prev));
+    }
+  }, [showRankingModal]);
+
+  useEffect(() => {
     buscarRankingDoBanco('jogo8').then((dbRanking) => {
       if (dbRanking && dbRanking.length > 0) {
         const mapped = dbRanking.map((r) => ({
@@ -203,9 +216,10 @@ export default function App() {
           credits: r.score,
           xpGanho: r.xpGanho,
           turns: 1,
-          puzzlePieces: r.correct ?? 3
+          puzzlePieces: r.correct ?? 3,
+          createdAt: r.createdAt || Date.now()
         }));
-        setRanking(mapped);
+        setRanking(filtrarRankingExpirado(mapped));
       }
     });
   }, []);
@@ -883,6 +897,7 @@ export default function App() {
       });
       return {
         id: Date.now() + i,
+        createdAt: Date.now(),
         name: p.name,
         turma: p.turma,
         credits: p.credits,
@@ -951,11 +966,6 @@ export default function App() {
       roomManagerRef.current = null;
     }
     setScreen('welcome');
-  };
-
-  const clearClassRanking = (turmaAlvo) => {
-    setRanking((prev) => prev.filter((item) => item.turma !== turmaAlvo));
-    limparRankingTurmaNoBanco('jogo8', turmaAlvo);
   };
 
   const ranking8A = ranking.filter((r) => r.turma === '8º A');
@@ -2017,15 +2027,6 @@ export default function App() {
                     <Award size={19} color="#15803d" />
                     <span>Ranking 8º A</span>
                   </h3>
-                  {ranking8A.length > 0 && (
-                    <button
-                      onClick={() => clearClassRanking('8º A')}
-                      className="btn-top"
-                      style={{ background: '#dc2626', padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
-                    >
-                      <Trash2 size={13} /> Limpar 8º A
-                    </button>
-                  )}
                 </div>
 
                 {ranking8A.length === 0 ? (
@@ -2058,15 +2059,6 @@ export default function App() {
                     <Award size={19} color="#15803d" />
                     <span>Ranking 8º B</span>
                   </h3>
-                  {ranking8B.length > 0 && (
-                    <button
-                      onClick={() => clearClassRanking('8º B')}
-                      className="btn-top"
-                      style={{ background: '#dc2626', padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
-                    >
-                      <Trash2 size={13} /> Limpar 8º B
-                    </button>
-                  )}
                 </div>
 
                 {ranking8B.length === 0 ? (
