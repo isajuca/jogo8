@@ -2,40 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
   Trophy,
-  Dices,
   Puzzle,
-  Sparkles,
-  CheckCircle2,
-  XCircle,
   RotateCcw,
   UserPlus,
-  Trash2,
   X,
-  Play,
-  ArrowRight,
+  ChevronRight,
   Users,
   Copy,
   Check,
-  Wifi,
-  Monitor,
-  Crown,
-  LogOut,
-  Zap,
-  Flower2,
-  Coins,
-  MapPin,
-  AlertTriangle,
+  Home,
   Award,
-  Compass,
-  Bike,
-  Cpu,
-  TreePine
+  AlertCircle
 } from 'lucide-react';
 import {
   BOARD_SPACES,
   PROGRESSO_REGRESSO_CARDS,
-  ACAO_CARDS,
-  SMART_CITIES_DEFINITION
+  ACAO_CARDS
 } from './data/cidadesData';
 import { RoomConnectionManager } from './multiplayer/roomSync';
 import {
@@ -44,55 +26,106 @@ import {
   filtrarRankingExpirado
 } from './services/xpApi';
 
-// 4 Peões Vetoriais disponíveis para os até 4 jogadores da sala (100% sem emojis)
+// 4 Peões 3D oficiais recortados da imagem enviada pela usuária
 export const PAWN_OPTIONS = [
   {
     id: 'skate_patins',
-    shortCode: 'P1',
-    iconType: 'compass',
-    label: 'Explorador Roxo',
-    color: '#9333ea',
-    gradient: 'linear-gradient(135deg, #a855f7, #ec4899)',
-    lightBg: '#f3e8ff'
+    label: 'Patins Retrô',
+    img: '/assets/pawn_patins.png',
+    color: '#ec4899'
   },
   {
     id: 'bike_solar',
-    shortCode: 'P2',
-    iconType: 'bike',
-    label: 'Ciclista Verde',
-    color: '#059669',
-    gradient: 'linear-gradient(135deg, #10b981, #047857)',
-    lightBg: '#d1fae5'
+    label: 'Bike Verde',
+    img: '/assets/pawn_bike.png',
+    color: '#22c55e'
   },
   {
     id: 'skate_eco',
-    shortCode: 'P3',
-    iconType: 'zap',
-    label: 'Energia Solar',
-    color: '#ea580c',
-    gradient: 'linear-gradient(135deg, #f97316, #dc2626)',
-    lightBg: '#ffedd5'
+    label: 'Skate Solar',
+    img: '/assets/pawn_skate.png',
+    color: '#38bdf8'
   },
   {
     id: 'patinete_smart',
-    shortCode: 'P4',
-    iconType: 'cpu',
-    label: 'Inovador Smart',
-    color: '#0284c7',
-    gradient: 'linear-gradient(135deg, #38bdf8, #0369a1)',
-    lightBg: '#e0f2fe'
+    label: 'Patinete Elétrico',
+    img: '/assets/pawn_patinete.png',
+    color: '#a855f7'
   }
 ];
 
-function PawnVectorIcon({ type, size = 18, color = 'currentColor' }) {
-  if (type === 'bike') return <Bike size={size} color={color} strokeWidth={2.4} />;
-  if (type === 'zap') return <Zap size={size} color={color} strokeWidth={2.4} />;
-  if (type === 'cpu') return <Cpu size={size} color={color} strokeWidth={2.4} />;
-  return <Compass size={size} color={color} strokeWidth={2.4} />;
+// Coordenadas (left%, top%) das 20 casas sobre o Tabuleiro 3D em Espiral (/assets/tabuleiro_3d.png)
+const SPIRAL_COORDS = [
+  { left: 55, top: 84 }, // 0: INÍCIO (Comunidade azul inferior)
+  { left: 42, top: 83 }, // 1: Engrenagem azul
+  { left: 31, top: 77 }, // 2: Reciclagem verde
+  { left: 22, top: 69 }, // 3: Tablet roxo
+  { left: 16, top: 60 }, // 4: Lâmpada azul
+  { left: 11, top: 49 }, // 5: Globo azul
+  { left: 9,  top: 39 }, // 6: Rede azul
+  { left: 12, top: 29 }, // 7: Reciclagem azul
+  { left: 17, top: 21 }, // 8: Folha verde
+  { left: 24, top: 16 }, // 9: Engrenagem azul
+  { left: 31, top: 22 }, // 10: Folha verde interna
+  { left: 38, top: 17 }, // 11: Interrogação amarela (?)
+  { left: 48, top: 13 }, // 12: Tablet roxo topo
+  { left: 58, top: 12 }, // 13: Reciclagem verde topo
+  { left: 67, top: 14 }, // 14: Lâmpada azul topo-direita
+  { left: 75, top: 19 }, // 15: Interrogação amarela (?)
+  { left: 82, top: 27 }, // 16: Folha verde direita
+  { left: 87, top: 38 }, // 17: Engrenagem azul direita
+  { left: 88, top: 50 }, // 18: Diamante ciano direita
+  { left: 80, top: 68 }  // 19: Reta final de volta ao INÍCIO
+];
+
+// Logo Oficial AstroLearn com a nova imagem transparente
+function AstroLearnBrandLogo() {
+  return (
+    <div className="cidades-brand-logo">
+      <div className="cidades-logo-img-wrap">
+        <img
+          src="/assets/logo_astrolearn.png"
+          alt="Logo AstroLearn"
+          className="cidades-official-logo-img"
+        />
+      </div>
+      <span className="cidades-logo-text">
+        <strong>Astro</strong>Learn
+      </span>
+    </div>
+  );
 }
 
-// Componente visual do Dado 3D com bolinhas reais (1 a 6)
-function DiceFace({ value, isRolling }) {
+// Folha Verde Vetorial
+function GreenLeafSVG({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+      <defs>
+        <linearGradient id="leafGrad8" x1="4" y1="4" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#86efac" />
+          <stop offset="0.5" stopColor="#22c55e" />
+          <stop offset="1" stopColor="#15803d" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M23 5C14 5 7 10.5 6 19.5C6 20.8 6.8 22 8 22C17 21 22.5 14 23 5Z"
+        fill="url(#leafGrad8)"
+        stroke="#bbf7d0"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 22C10.5 17.5 15.5 13.5 21 9"
+        stroke="#dcfce7"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// Componente visual do Dado 3D Arredondado
+function DiceFace3D({ value, isRolling }) {
   const pipPositions = {
     1: [4],
     2: [0, 8],
@@ -104,14 +137,12 @@ function DiceFace({ value, isRolling }) {
   const activePips = pipPositions[value] || [4];
 
   return (
-    <div className={`dice-3d-cube ${isRolling ? 'rolling' : ''}`}>
-      <div className="dice-grid-3x3">
+    <div className={`dice-3d-widget ${isRolling ? 'rolling' : ''}`}>
+      <div className="dice-face-grid">
         {Array.from({ length: 9 }).map((_, idx) => (
           <span
             key={idx}
-            className={`dice-pip ${activePips.includes(idx) ? 'visible' : ''} ${
-              value === 1 && idx === 4 ? 'pip-center-big' : ''
-            }`}
+            className={`dice-pip-dot ${activePips.includes(idx) ? 'visible' : ''}`}
           />
         ))}
       </div>
@@ -119,28 +150,31 @@ function DiceFace({ value, isRolling }) {
   );
 }
 
-// Gera código numérico curto de 4 dígitos para a sala
+// Gera código alfanumérico curto de 4 caracteres para a sala
 function generateRoomCode() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 export default function App() {
-  // Telas: 'welcome' | 'lobby' | 'playing'
-  const [screen, setScreen] = useState('welcome');
+  // Telas: 'home' | 'howto' | 'setup' | 'join' | 'lobby' | 'playing' | 'result'
+  const [screen, setScreen] = useState('home');
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const [showPuzzleModal, setShowPuzzleModal] = useState(false);
 
-  // Dados do jogador local na tela inicial
+  // Dados do jogador local na tela Criar Sala / Entrar na Sala
   const [playerName, setPlayerName] = useState('');
-  const [playerClass, setPlayerClass] = useState('');
+  const [playerClass, setPlayerClass] = useState('8º A');
   const [selectedPawnId, setSelectedPawnId] = useState(PAWN_OPTIONS[0].id);
-  const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinDigits, setJoinDigits] = useState(['', '', '', '']);
   const [formError, setFormError] = useState('');
 
   // Adicionar jogador no mesmo computador (dentro do Lobby)
   const [localAddName, setLocalAddName] = useState('');
   const [localAddClass, setLocalAddClass] = useState('8º A');
   const [showAddLocalForm, setShowAddLocalForm] = useState(false);
+
+  // Opção selecionada antes de clicar em "Confirmar" no modal de Pergunta (Painel 7)
+  const [pendingOptionIdx, setPendingOptionIdx] = useState(null);
 
   // Identificador único deste navegador/aba
   const [myClientId] = useState(() => 'p_' + Math.random().toString(36).slice(2, 10));
@@ -151,16 +185,16 @@ export default function App() {
   const [networkStatus, setNetworkStatus] = useState('online');
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Rankings separados para 8º A e 8º B
+  // Rankings separados para 8º A e 8º B (expira após 2 horas)
   const [ranking, setRanking] = useState(() => {
     const saved = localStorage.getItem('cidades_inteligentes_ranking_v1');
     return saved ? filtrarRankingExpirado(JSON.parse(saved)) : [];
   });
 
-  // Estado Sincronizado da Partida (Host é a fonte da verdade e transmite aos Guests)
+  // Estado Sincronizado da Partida
   const [players, setPlayers] = useState([]);
   const [currentTurnIdx, setCurrentTurnIdx] = useState(0);
-  const [diceValue, setDiceValue] = useState(1);
+  const [diceValue, setDiceValue] = useState(5);
   const [isRolling, setIsRolling] = useState(false);
   const [isMovingPawn, setIsMovingPawn] = useState(false);
   const [steppingPlayerId, setSteppingPlayerId] = useState(null);
@@ -170,6 +204,7 @@ export default function App() {
   const [isGameFinished, setIsGameFinished] = useState(false);
   const [winnerPlayer, setWinnerPlayer] = useState(null);
 
+  const digitRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   const roomManagerRef = useRef(null);
   const stateRef = useRef({});
   stateRef.current = {
@@ -194,19 +229,6 @@ export default function App() {
   }, [ranking]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRanking((prev) => filtrarRankingExpirado(prev));
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (showRankingModal) {
-      setRanking((prev) => filtrarRankingExpirado(prev));
-    }
-  }, [showRankingModal]);
-
-  useEffect(() => {
     buscarRankingDoBanco('jogo8').then((dbRanking) => {
       if (dbRanking && dbRanking.length > 0) {
         const mapped = dbRanking.map((r) => ({
@@ -225,6 +247,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setRanking((prev) => filtrarRankingExpirado(prev));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (showRankingModal) {
+      setRanking((prev) => filtrarRankingExpirado(prev));
+    }
+  }, [showRankingModal]);
+
+  useEffect(() => {
     return () => {
       if (roomManagerRef.current) {
         roomManagerRef.current.destroy();
@@ -233,7 +268,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (roomRole === 'host' && roomManagerRef.current && (screen === 'lobby' || screen === 'playing')) {
+    setPendingOptionIdx(null);
+  }, [activeEvent?.card?.id, activeEvent?.type]);
+
+  useEffect(() => {
+    if (
+      roomRole === 'host' &&
+      roomManagerRef.current &&
+      (screen === 'lobby' || screen === 'playing' || screen === 'result')
+    ) {
       roomManagerRef.current.send({
         type: 'ROOM_STATE_SYNC',
         payload: {
@@ -270,16 +313,12 @@ export default function App() {
 
   const validateIdentity = () => {
     const trimmed = playerName.trim();
-    if (!trimmed && !playerClass) {
-      setFormError('Por favor, digite seu nome e selecione sua turma (8º A ou 8º B).');
-      return false;
-    }
     if (!trimmed) {
-      setFormError('Por favor, digite seu nome antes de continuar.');
+      setFormError('Por favor, digite seu nome antes de continuar!');
       return false;
     }
     if (!playerClass) {
-      setFormError('Por favor, escolha sua turma (8º A ou 8º B).');
+      setFormError('Por favor, escolha sua turma (8º A ou 8º B)!');
       return false;
     }
     setFormError('');
@@ -303,7 +342,7 @@ export default function App() {
       isHost: true,
       isLocalOnHost: true,
       position: 0,
-      credits: 5,
+      credits: 10,
       puzzlePieces: 0,
       turns: 0,
       skipNextTurn: false
@@ -337,12 +376,48 @@ export default function App() {
     roomManagerRef.current = manager;
   };
 
+  const handleGoToJoinScreen = () => {
+    if (!validateIdentity()) return;
+    setFormError('');
+    setJoinDigits(['', '', '', '']);
+    setScreen('join');
+  };
+
+  const handleDigitChange = (index, val) => {
+    const clean = val.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(-1);
+    const updated = [...joinDigits];
+    updated[index] = clean;
+    setJoinDigits(updated);
+    if (formError) setFormError('');
+    if (clean && index < 3) {
+      digitRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !joinDigits[index] && index > 0) {
+      digitRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handleDigitPaste = (e) => {
+    const pasted = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4);
+    if (pasted.length > 0) {
+      e.preventDefault();
+      const next = ['', '', '', ''];
+      for (let i = 0; i < 4; i++) {
+        next[i] = pasted[i] || '';
+      }
+      setJoinDigits(next);
+    }
+  };
+
   const handleJoinRoom = (e) => {
     if (e) e.preventDefault();
     if (!validateIdentity()) return;
-    const cleanCode = joinCodeInput.trim().toUpperCase();
+    const cleanCode = joinDigits.join('').trim().toUpperCase();
     if (cleanCode.length < 4) {
-      setFormError('Digite o código de 4 números da sala criada pelo seu colega.');
+      setFormError('Digite os 4 dígitos do código da sala.');
       return;
     }
 
@@ -393,7 +468,6 @@ export default function App() {
       });
     }, 250);
 
-    setJoinModalOpen(false);
     setScreen('lobby');
   };
 
@@ -430,7 +504,7 @@ export default function App() {
           isHost: false,
           isLocalOnHost: false,
           position: 0,
-          credits: 5,
+          credits: 10,
           puzzlePieces: 0,
           turns: 0,
           skipNextTurn: false
@@ -462,7 +536,7 @@ export default function App() {
 
     if (data.type === 'JOIN_REJECTED' && data.targetId === myClientId) {
       setFormError(data.reason || 'Não foi possível entrar na sala.');
-      setScreen('welcome');
+      setScreen('setup');
       return;
     }
 
@@ -501,7 +575,7 @@ export default function App() {
       isHost: false,
       isLocalOnHost: true,
       position: 0,
-      credits: 5,
+      credits: 10,
       puzzlePieces: 0,
       turns: 0,
       skipNextTurn: false
@@ -517,20 +591,27 @@ export default function App() {
     setPlayers((prev) => prev.filter((p) => p.id !== idToRemove));
   };
 
-  const handleSelectPawnInLobby = (playerId, newPawnId) => {
-    const taken = players.some((p) => p.id !== playerId && p.pawnId === newPawnId);
-    if (taken) return;
-
-    if (roomRole === 'host') {
-      setPlayers((prev) =>
-        prev.map((p) => (p.id === playerId ? { ...p, pawnId: newPawnId } : p))
-      );
-    } else {
-      roomManagerRef.current?.send({
-        type: 'CHANGE_PAWN',
-        playerId,
-        pawnId: newPawnId
-      });
+  const handleCyclePawnInLobby = (playerId) => {
+    const player = players.find((p) => p.id === playerId);
+    if (!player) return;
+    const currentIdx = PAWN_OPTIONS.findIndex((po) => po.id === player.pawnId);
+    for (let offset = 1; offset <= PAWN_OPTIONS.length; offset++) {
+      const candidate = PAWN_OPTIONS[(currentIdx + offset) % PAWN_OPTIONS.length];
+      const taken = players.some((p) => p.id !== playerId && p.pawnId === candidate.id);
+      if (!taken) {
+        if (roomRole === 'host') {
+          setPlayers((prev) =>
+            prev.map((p) => (p.id === playerId ? { ...p, pawnId: candidate.id } : p))
+          );
+        } else {
+          roomManagerRef.current?.send({
+            type: 'CHANGE_PAWN',
+            playerId,
+            pawnId: candidate.id
+          });
+        }
+        break;
+      }
     }
   };
 
@@ -540,7 +621,7 @@ export default function App() {
     const initializedPlayers = players.map((p) => ({
       ...p,
       position: 0,
-      credits: 5,
+      credits: 10,
       puzzlePieces: 0,
       turns: 0,
       skipNextTurn: false
@@ -548,7 +629,7 @@ export default function App() {
 
     setPlayers(initializedPlayers);
     setCurrentTurnIdx(0);
-    setDiceValue(1);
+    setDiceValue(5);
     setIsRolling(false);
     setIsMovingPawn(false);
     setSteppingPlayerId(null);
@@ -556,12 +637,7 @@ export default function App() {
     setExtraRollGranted(false);
     setIsGameFinished(false);
     setWinnerPlayer(null);
-    setActiveEvent({
-      type: 'space',
-      spaceType: 'inicio',
-      title: 'Partida Iniciada na Trilha das Cidades Inteligentes',
-      message: `${initializedPlayers[0].name} começa a rodada. Todos iniciam na casa INÍCIO com 5 Créditos Verdes. Complete 3 voltas (3 peças do Quebra-Cabeça) para vencer!`
-    });
+    setActiveEvent(null);
     setScreen('playing');
   };
 
@@ -570,7 +646,7 @@ export default function App() {
   const triggerRollDiceOnHost = async () => {
     const st = stateRef.current;
     if (st.isRolling || st.isMovingPawn || st.isGameFinished) return;
-    if (st.activeEvent?.type === 'acao' && !st.activeEvent.answered) return;
+    if (st.activeEvent) return;
 
     const activePlayer = st.players[st.currentTurnIdx];
     if (!activePlayer) return;
@@ -595,7 +671,7 @@ export default function App() {
     let passedStartDuringMove = false;
 
     for (let step = 1; step <= rolled; step++) {
-      await sleep(290);
+      await sleep(280);
       currentPos = (currentPos + 1) % 20;
 
       if (currentPos === 0) {
@@ -618,7 +694,7 @@ export default function App() {
         await sleep(350);
         setIsMovingPawn(false);
         setSteppingPlayerId(null);
-        finishMatchOnHost(st.currentTurnIdx, currentCredits + 3, updatedTurns);
+        finishMatchOnHost(st.currentTurnIdx, currentCredits + 4, updatedTurns);
         return;
       }
     }
@@ -635,19 +711,8 @@ export default function App() {
         )
       );
 
-      setActiveEvent({
-        type: 'space',
-        spaceType: 'bike_avance3',
-        playerName: activePlayer.name,
-        title: 'Pedal Sustentável (+2 Créditos e Avança 3 Casas)',
-        message: `${activePlayer.name} andou de bike sem emitir CO₂! Ganhou +2 Créditos Verdes e avança mais 3 casas.`,
-        passedStart: passedStartDuringMove
-      });
-
-      await sleep(850);
-
       for (let bonusStep = 1; bonusStep <= 3; bonusStep++) {
-        await sleep(290);
+        await sleep(270);
         currentPos = (currentPos + 1) % 20;
         const bonusPosSnapshot = currentPos;
         setPlayers((prev) =>
@@ -659,24 +724,29 @@ export default function App() {
 
       setIsMovingPawn(false);
       setSteppingPlayerId(null);
+      setActiveEvent({
+        type: 'card_feedback',
+        isPositive: true,
+        playerName: activePlayer.name,
+        title: 'Carta de Ação',
+        message: `${activePlayer.name} pedalou pela ciclovia solar sem emitir CO₂ e avançou +3 casas!`,
+        creditsDelta: 2,
+        passedStart: passedStartDuringMove
+      });
       setTurnReadyToAdvance(true);
       return;
     }
 
     if (landedSpace.tipo === 'lixo_volte2') {
-      setActiveEvent({
-        type: 'space',
-        spaceType: 'lixo_volte2',
-        playerName: activePlayer.name,
-        title: 'Descarte Incorreto de Lixo (Volte 2 Casas)',
-        message: `${activePlayer.name} não descartou o lixo corretamente e precisa voltar 2 casas até o Momento de Descanso.`,
-        passedStart: passedStartDuringMove
-      });
-
-      await sleep(850);
+      currentCredits = Math.max(0, currentCredits - 2);
+      setPlayers((prev) =>
+        prev.map((p, idx) =>
+          idx === st.currentTurnIdx ? { ...p, credits: currentCredits } : p
+        )
+      );
 
       for (let backStep = 1; backStep <= 2; backStep++) {
-        await sleep(310);
+        await sleep(290);
         currentPos = (currentPos - 1 + 20) % 20;
         const backPosSnapshot = currentPos;
         setPlayers((prev) =>
@@ -688,6 +758,15 @@ export default function App() {
 
       setIsMovingPawn(false);
       setSteppingPlayerId(null);
+      setActiveEvent({
+        type: 'card_feedback',
+        isPositive: false,
+        playerName: activePlayer.name,
+        title: 'Ops!',
+        message: 'Descarte incorreto de resíduos! Você voltou 2 casas na trilha.',
+        creditsDelta: -2,
+        passedStart: passedStartDuringMove
+      });
       setTurnReadyToAdvance(true);
       return;
     }
@@ -707,9 +786,12 @@ export default function App() {
       );
 
       setActiveEvent({
-        type: 'pr',
+        type: 'card_feedback',
+        isPositive: randomCard.categoria === 'PROGRESSO',
         playerName: activePlayer.name,
-        card: randomCard,
+        title: randomCard.categoria === 'PROGRESSO' ? 'Carta de Ação' : 'Ops!',
+        message: randomCard.texto,
+        creditsDelta: randomCard.creditos,
         passedStart: passedStartDuringMove
       });
       setTurnReadyToAdvance(true);
@@ -724,69 +806,39 @@ export default function App() {
         passedStart: passedStartDuringMove
       });
       setTurnReadyToAdvance(false);
-    } else if (landedSpace.tipo === 'steam') {
-      const updatedCredits = currentCredits + 2;
+    } else if (landedSpace.tipo === 'steam' || landedSpace.tipo === 'estudo_jogue_novamente') {
+      const bonus = 3;
+      const updatedCredits = currentCredits + bonus;
       setPlayers((prev) =>
         prev.map((p, idx) =>
           idx === st.currentTurnIdx ? { ...p, credits: updatedCredits } : p
         )
       );
+      if (landedSpace.tipo === 'estudo_jogue_novamente') {
+        setExtraRollGranted(true);
+      }
       setActiveEvent({
-        type: 'space',
-        spaceType: 'steam',
+        type: 'card_feedback',
+        isPositive: true,
         playerName: activePlayer.name,
-        title: 'Espaço STEAM+ (+2 Créditos Verdes)',
+        title: 'Carta de Ação',
         message: landedSpace.descricao,
-        passedStart: passedStartDuringMove
-      });
-      setTurnReadyToAdvance(true);
-    } else if (landedSpace.tipo === 'estudo_jogue_novamente') {
-      const updatedCredits = currentCredits + 2;
-      setPlayers((prev) =>
-        prev.map((p, idx) =>
-          idx === st.currentTurnIdx ? { ...p, credits: updatedCredits } : p
-        )
-      );
-      setActiveEvent({
-        type: 'space',
-        spaceType: 'estudo_jogue_novamente',
-        playerName: activePlayer.name,
-        title: 'Compartilhando Saberes (+2 Créditos e Jogue Novamente)',
-        message: `${activePlayer.name} estudou sobre as cidades inteligentes e compartilhou com a comunidade! Ganhou +2 Créditos Verdes e direito a jogar o dado novamente.`,
-        passedStart: passedStartDuringMove
-      });
-      setExtraRollGranted(true);
-      setTurnReadyToAdvance(true);
-    } else if (landedSpace.tipo === 'parque') {
-      setPlayers((prev) =>
-        prev.map((p, idx) =>
-          idx === st.currentTurnIdx
-            ? { ...p, skipNextTurn: prev.length > 1 }
-            : p
-        )
-      );
-      setActiveEvent({
-        type: 'space',
-        spaceType: 'parque',
-        playerName: activePlayer.name,
-        title: 'Passeio no Parque',
-        message:
-          st.players.length > 1
-            ? `${activePlayer.name} chegou ao parque! Aproveite o passeio em contato com a natureza (descansa na próxima rodada).`
-            : `${activePlayer.name} chegou ao parque! Aproveite o passeio em contato com a natureza.`,
+        creditsDelta: bonus,
         passedStart: passedStartDuringMove
       });
       setTurnReadyToAdvance(true);
     } else {
+      // Nas demais casas, sorteia uma Pergunta de Ação para manter o jogo sempre dinâmico!
+      const randomAction = ACAO_CARDS[Math.floor(Math.random() * ACAO_CARDS.length)];
       setActiveEvent({
-        type: 'space',
-        spaceType: landedSpace.tipo,
+        type: 'acao',
         playerName: activePlayer.name,
-        title: landedSpace.nome,
-        message: landedSpace.descricao,
+        card: randomAction,
+        answered: false,
+        chosenIdx: null,
         passedStart: passedStartDuringMove
       });
-      setTurnReadyToAdvance(true);
+      setTurnReadyToAdvance(false);
     }
   };
 
@@ -798,20 +850,24 @@ export default function App() {
     const activePlayer = st.players[st.currentTurnIdx];
     if (!activePlayer) return;
 
-    if (isCorrect) {
-      const updatedCredits = activePlayer.credits + st.activeEvent.card.creditos;
-      setPlayers((prev) =>
-        prev.map((p, idx) =>
-          idx === st.currentTurnIdx ? { ...p, credits: updatedCredits } : p
-        )
-      );
-    }
+    const delta = isCorrect ? st.activeEvent.card.creditos : -2;
+    const updatedCredits = Math.max(0, activePlayer.credits + delta);
 
+    setPlayers((prev) =>
+      prev.map((p, idx) =>
+        idx === st.currentTurnIdx ? { ...p, credits: updatedCredits } : p
+      )
+    );
+
+    // Transiciona para o Card de Feedback (Painel 8: "Carta de Ação" verde ou "Ops!" vermelho)
     setActiveEvent({
-      ...st.activeEvent,
-      answered: true,
-      chosenIdx: optionIndex,
-      isCorrect
+      type: 'card_feedback',
+      isPositive: isCorrect,
+      playerName: activePlayer.name,
+      title: isCorrect ? 'Carta de Ação' : 'Ops!',
+      message: st.activeEvent.card.explicacao,
+      creditsDelta: delta,
+      passedStart: st.activeEvent.passedStart
     });
     setTurnReadyToAdvance(true);
   };
@@ -823,45 +879,29 @@ export default function App() {
     if (st.extraRollGranted) {
       setExtraRollGranted(false);
       setTurnReadyToAdvance(false);
-      setActiveEvent({
-        type: 'space',
-        spaceType: 'estudo_jogue_novamente',
-        title: `Rodada Bônus de ${st.players[st.currentTurnIdx]?.name}`,
-        message: 'Lance o dado novamente para continuar avançando pela Cidade Inteligente!'
-      });
+      setActiveEvent(null);
       return;
     }
 
     const total = st.players.length;
+    setActiveEvent(null);
+    setTurnReadyToAdvance(false);
+    setExtraRollGranted(false);
+
     if (total <= 1) {
-      setTurnReadyToAdvance(false);
       return;
     }
 
     let nextIdx = (st.currentTurnIdx + 1) % total;
-    let skippedPlayerName = null;
-
     const nextCandidate = st.players[nextIdx];
     if (nextCandidate && nextCandidate.skipNextTurn) {
-      skippedPlayerName = nextCandidate.name;
       setPlayers((prev) =>
         prev.map((p, idx) => (idx === nextIdx ? { ...p, skipNextTurn: false } : p))
       );
       nextIdx = (nextIdx + 1) % total;
     }
 
-    const upcomingPlayer = st.players[nextIdx];
     setCurrentTurnIdx(nextIdx);
-    setTurnReadyToAdvance(false);
-    setExtraRollGranted(false);
-    setActiveEvent({
-      type: 'space',
-      spaceType: 'turn_change',
-      title: `Vez de ${upcomingPlayer?.name}`,
-      message: skippedPlayerName
-        ? `${skippedPlayerName} aproveitou o Passeio no Parque nesta rodada. Agora é a vez de ${upcomingPlayer?.name} lançar o dado!`
-        : `${upcomingPlayer?.name}, clique em "Lançar Dado" para fazer sua jogada!`
-    });
   };
 
   const finishMatchOnHost = (winnerIdx, winnerFinalCredits, winnerTurns) => {
@@ -883,6 +923,7 @@ export default function App() {
     setIsGameFinished(true);
     setActiveEvent(null);
     setTurnReadyToAdvance(false);
+    setScreen('result');
 
     const newEntries = updatedPlayers.map((p, i) => {
       const xpCalculado = Math.max(80, (p.credits || 0) * 50 + (p.puzzlePieces || 0) * 100);
@@ -907,7 +948,9 @@ export default function App() {
       };
     });
 
-    setRanking((prev) => [...prev, ...newEntries].sort((a, b) => b.credits - a.credits));
+    setRanking((prev) =>
+      filtrarRankingExpirado([...prev, ...newEntries]).sort((a, b) => b.credits - a.credits)
+    );
 
     confetti({
       particleCount: 150,
@@ -928,20 +971,21 @@ export default function App() {
     }
   };
 
-  const handleAnswerCardClick = (optionIndex) => {
+  const handleConfirmQuestionOption = () => {
+    if (pendingOptionIdx === null) return;
     if (roomRole === 'host') {
-      triggerAnswerActionCardOnHost(optionIndex);
+      triggerAnswerActionCardOnHost(pendingOptionIdx);
     } else {
       roomManagerRef.current?.send({
         type: 'GUEST_ACTION',
         playerId: myClientId,
         action: 'ANSWER_CARD',
-        optionIndex
+        optionIndex: pendingOptionIdx
       });
     }
   };
 
-  const handleNextTurnClick = () => {
+  const handleDismissFeedbackModal = () => {
     if (roomRole === 'host') {
       triggerNextTurnOnHost();
     } else {
@@ -965,7 +1009,8 @@ export default function App() {
       roomManagerRef.current.destroy();
       roomManagerRef.current = null;
     }
-    setScreen('welcome');
+    setActiveEvent(null);
+    setScreen('home');
   };
 
   const ranking8A = ranking.filter((r) => r.turma === '8º A');
@@ -977,1108 +1022,886 @@ export default function App() {
     turma: playerClass || '8º A',
     pawnId: selectedPawnId,
     position: 0,
-    credits: 5,
+    credits: 10,
     puzzlePieces: 0,
     turns: 0
   };
 
-  const currentSpace = BOARD_SPACES[currentPlayer.position] || BOARD_SPACES[0];
-  const waitingForActionAnswer = activeEvent?.type === 'acao' && !activeEvent.answered;
-
   const canControlCurrentTurn =
-    currentPlayer.id === myClientId || (roomRole === 'host' && currentPlayer.isLocalOnHost);
+    roomRole === 'host'
+      ? currentPlayer.id === myClientId || currentPlayer.isLocalOnHost
+      : currentPlayer.id === myClientId;
 
-  const getPawnCoordinates = (player) => {
-    const space = BOARD_SPACES[player.position] || BOARD_SPACES[0];
-    const sameSpacePlayers = players.filter((p) => p.position === player.position);
-    const count = sameSpacePlayers.length;
-    const idxInSpace = sameSpacePlayers.findIndex((p) => p.id === player.id);
-
-    let offsetX = 0;
-    let offsetY = 0;
-
-    if (count === 2) {
-      offsetX = idxInSpace === 0 ? -3.1 : 3.1;
-      offsetY = idxInSpace === 0 ? -1.8 : 1.8;
-    } else if (count === 3) {
-      const offsets = [
-        { x: -3.2, y: -2.4 },
-        { x: 3.2, y: -2.4 },
-        { x: 0, y: 2.8 }
-      ];
-      offsetX = offsets[idxInSpace]?.x || 0;
-      offsetY = offsets[idxInSpace]?.y || 0;
-    } else if (count >= 4) {
-      const offsets = [
-        { x: -3.3, y: -2.6 },
-        { x: 3.3, y: -2.6 },
-        { x: -3.3, y: 2.6 },
-        { x: 3.3, y: 2.6 }
-      ];
-      offsetX = offsets[idxInSpace]?.x || 0;
-      offsetY = offsets[idxInSpace]?.y || 0;
+  // Selecionar a cena de fundo conforme a tela atual
+  let activeBg = '/assets/scene_welcome.jpg';
+  if (screen === 'howto') {
+    activeBg = '/assets/scene_howto.jpg';
+  } else if (screen === 'setup' || screen === 'lobby') {
+    activeBg = '/assets/scene_setup.jpg';
+  } else if (screen === 'join') {
+    activeBg = '/assets/scene_join.jpg';
+  } else if (screen === 'playing') {
+    if (activeEvent?.type === 'acao') {
+      activeBg = '/assets/scene_question.jpg';
+    } else {
+      activeBg = '/assets/scene_board_bg.jpg';
     }
-
-    return {
-      left: `${space.x + offsetX}%`,
-      top: `${space.y + offsetY}%`
-    };
-  };
-
-  const activePawnObj =
-    PAWN_OPTIONS.find((po) => po.id === currentPlayer.pawnId) || PAWN_OPTIONS[0];
+  } else if (screen === 'result') {
+    activeBg = '/assets/scene_result.jpg';
+  }
 
   return (
-    <div className="cidades-app">
-      {/* BARRA DE TOPO */}
+    <div
+      className={`cidades-stage screen-${screen}`}
+      style={{
+        backgroundImage: `url('${activeBg}')`
+      }}
+    >
+      {/* BARRA SUPERIOR */}
       <header className="cidades-topbar">
-        <div className="brand-box" onClick={handleLeaveRoom} title="Voltar ao Menu Inicial">
-          <img src="/assets/moeda_5.jpg" alt="Crédito Verde" className="brand-coin-img" />
-          <div>
-            <div className="brand-title">Cidades Inteligentes • Tabuleiro Online</div>
-            <div className="brand-sub">Projeto Educativo TCC • 8º Ano Ensino Fundamental (1 a 4 Jogadores)</div>
-          </div>
-        </div>
-
-        <div className="hud-row">
-          {(screen === 'lobby' || screen === 'playing') && roomCode && (
-            <div className="hud-badge room-pill" onClick={handleCopyRoomCode} title="Clique para copiar o código da sala">
-              <Wifi size={15} color="#4ade80" />
-              <span>Sala: <strong>{roomCode}</strong></span>
-              {copiedCode ? <Check size={14} color="#4ade80" /> : <Copy size={14} />}
-            </div>
-          )}
-
-          {screen === 'playing' && (
-            <div className="hud-badge turn-indicator-pill">
-              <Dices size={16} />
-              <span>Vez de: <strong>{currentPlayer.name}</strong></span>
-            </div>
-          )}
-
-          <button className="btn-top" onClick={() => setShowRankingModal(true)}>
-            <Trophy size={16} />
-            <span>Rankings (8º A / 8º B)</span>
-          </button>
-
-          {screen !== 'welcome' && (
+        <div className="topbar-left">
+          {screen !== 'home' && (
             <button
-              className="btn-top btn-leave"
+              className="btn-circle-icon"
               onClick={handleLeaveRoom}
-              title="Sair da sala atual"
+              title="Voltar ao Início"
             >
-              <LogOut size={15} />
-              <span>Sair</span>
+              <Home size={22} />
+            </button>
+          )}
+
+          {(screen === 'lobby' || screen === 'playing') && roomCode && (
+            <button
+              className="top-pill-btn"
+              onClick={handleCopyRoomCode}
+              title="Clique para copiar o código da sala"
+            >
+              <span>Sala: {roomCode}</span>
+              {copiedCode ? <Check size={15} color="#4ade80" /> : <Copy size={15} />}
             </button>
           )}
         </div>
+
+        <div className="topbar-right">
+          {screen === 'playing' && (
+            <button
+              className="top-pill-btn"
+              onClick={() => setShowPuzzleModal(true)}
+              title="Ver progresso do Quebra-Cabeça"
+            >
+              <Puzzle size={16} color="#4ade80" />
+              <span>Quebra-Cabeça ({currentPlayer.puzzlePieces}/3)</span>
+            </button>
+          )}
+
+          <button
+            className="top-pill-btn"
+            onClick={() => setShowRankingModal(true)}
+            title="Ver Rankings do 8º A e 8º B"
+          >
+            <Trophy size={16} color="#facc15" />
+            <span>Rankings (8º A / 8º B)</span>
+          </button>
+        </div>
       </header>
 
-      {/* =========================================================
-          TELA 1: BOAS-VINDAS, ESCOLHA DO PEÃO E CRIAR / ENTRAR SALA
-         ========================================================= */}
-      {screen === 'welcome' && (
-        <main className="welcome-wrap">
-          <div className="welcome-card">
-            <div className="welcome-left-info">
-              <div className="welcome-badges-row">
-                <span className="tag-pill-green">TABULEIRO DIGITAL • 8º ANO</span>
-                <span className="tag-pill-gold">
-                  <Users size={14} /> 1 A 4 JOGADORES (ONLINE OU MESMO PC)
-                </span>
-              </div>
+      {/* PALCO PRINCIPAL */}
+      <main className="cidades-main-content">
+        {/* =======================================================
+            PAINEL 1: TELA INICIAL (Logo Nova + Título 3D + COMEÇAR >)
+           ======================================================= */}
+        {screen === 'home' && (
+          <div className="right-hero-column">
+            <AstroLearnBrandLogo />
 
-              <h1 className="welcome-main-title">
-                Trilha das Cidades Inteligentes
-              </h1>
-
-              <p className="welcome-lead">
-                Crie uma sala para jogar com até <strong>4 amigos em computadores diferentes</strong> (ou no mesmo PC),
-                lance o dado 3D, responda às <strong>Cartas de Ação</strong> e complete <strong>3 voltas</strong> para montar o{' '}
-                <strong>Quebra-Cabeça Cidades Inteligentes</strong>!
-              </p>
-
-              <div className="feature-cards-grid">
-                <div className="feature-mini-card">
-                  <span className="feature-icon">
-                    <Zap size={22} color="#16a34a" />
-                  </span>
-                  <div>
-                    <strong>Progresso ou Regresso</strong>
-                    <p>Sorteie cartas que aumentam ou reduzem seus Créditos Verdes conforme as escolhas urbanas.</p>
-                  </div>
-                </div>
-
-                <div className="feature-mini-card">
-                  <span className="feature-icon">
-                    <Flower2 size={22} color="#ea580c" />
-                  </span>
-                  <div>
-                    <strong>Cartas de Ação STEAM+</strong>
-                    <p>Desafios de Quiz, Criatividade, Debate e Ação Cidadã valendo +4 ou +5 Créditos Verdes!</p>
-                  </div>
-                </div>
-
-                <div className="feature-mini-card">
-                  <span className="feature-icon">
-                    <Puzzle size={22} color="#7c3aed" />
-                  </span>
-                  <div>
-                    <strong>Quebra-Cabeça (3 Voltas)</strong>
-                    <p>Cada vez que seu peão passa pelo <em>Início</em>, você conquista 1 peça. Junte as 3 para vencer!</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="coins-showcase">
-                <div className="coins-stack">
-                  <img src="/assets/moeda_1.jpg" alt="1 Crédito Verde" className="coin-thumb" />
-                  <img src="/assets/moeda_2.jpg" alt="2 Créditos Verdes" className="coin-thumb" />
-                  <img src="/assets/moeda_5.jpg" alt="5 Créditos Verdes" className="coin-thumb" />
-                </div>
-                <span>
-                  Todos começam com <strong>5 Créditos Verdes</strong>. Quem terminar com mais créditos lidera o Ranking da turma!
-                </span>
-              </div>
+            <div className="cidades-3d-title-block">
+              <div className="title-3d-gold">Trilha das</div>
+              <div className="title-3d-green">CIDADES</div>
+              <div className="title-3d-green">INTELIGENTES</div>
             </div>
 
-            {/* Painel de Identificação + Criar/Entrar na Sala */}
-            <div className="login-panel">
-              <div className="login-header-badge">
-                <Users size={20} />
-                <span>Central Multiplayer (1 a 4 Jogadores)</span>
-              </div>
+            <p className="home-hero-subtitle">
+              Explore, jogue e ajude a construir
+              <br />
+              um futuro mais sustentável!
+            </p>
 
-              <h2 style={{ fontSize: '1.38rem', marginBottom: '0.75rem', color: '#1b4332' }}>
-                Identificação do Jogador
+            <button
+              type="button"
+              onClick={() => setScreen('howto')}
+              className="btn-astro-pill btn-hero-start"
+            >
+              <span>COMEÇAR</span>
+              <ChevronRight size={26} strokeWidth={3} />
+            </button>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 2: COMO FUNCIONA? (4 Passos + ENTENDI! >)
+           ======================================================= */}
+        {screen === 'howto' && (
+          <div className="right-hero-column">
+            <div className="dark-glass-panel howto-panel">
+              <h2 className="panel-heading-howto">
+                COMO <span className="violet-gradient-text">FUNCIONA?</span>
               </h2>
 
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Digite seu nome *"
-                value={playerName}
-                onChange={(e) => {
-                  setPlayerName(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                maxLength={22}
-              />
+              <div className="howto-list">
+                <div className="howto-row">
+                  <div className="howto-badge-icon purple">
+                    <Users size={22} color="#e9d5ff" />
+                  </div>
+                  <span className="howto-num">1</span>
+                  <p>
+                    Crie uma sala e jogue com até 4 amigos em computadores diferentes (ou no mesmo PC).
+                  </p>
+                </div>
 
-              <select
-                className="field-input"
-                value={playerClass}
-                onChange={(e) => {
-                  setPlayerClass(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                style={{ cursor: 'pointer' }}
+                <div className="howto-row">
+                  <div className="howto-badge-icon blue">
+                    <img
+                      src="/assets/dado_3d.png"
+                      alt="Dado 3D"
+                      style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <span className="howto-num">2</span>
+                  <p>
+                    Lance o dado 3D e avance pelo tabuleiro.
+                  </p>
+                </div>
+
+                <div className="howto-row">
+                  <div className="howto-badge-icon gold">
+                    <Award size={22} color="#fde047" />
+                  </div>
+                  <span className="howto-num">3</span>
+                  <p>
+                    Responda às Cartas de Ação e ganhe ou perca Créditos Verdes.
+                  </p>
+                </div>
+
+                <div className="howto-row">
+                  <div className="howto-badge-icon green">
+                    <Puzzle size={22} color="#86efac" />
+                  </div>
+                  <span className="howto-num">4</span>
+                  <p>
+                    Complete 3 voltas para montar o Quebra-Cabeça Cidades Inteligentes!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setScreen('setup')}
+                className="btn-astro-pill"
               >
-                <option value="">Escolha sua turma (8º A ou 8º B) *</option>
-                <option value="8º A">Turma 8º A</option>
-                <option value="8º B">Turma 8º B</option>
-              </select>
+                <span>ENTENDI!</span>
+                <ChevronRight size={24} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        )}
 
-              {/* Seleção de Peão */}
-              <div className="pawn-picker-label">Escolha seu Peão para o Tabuleiro:</div>
-              <div className="pawn-picker-grid">
-                {PAWN_OPTIONS.map((po) => {
-                  const active = selectedPawnId === po.id;
-                  return (
-                    <button
-                      key={po.id}
-                      type="button"
-                      onClick={() => setSelectedPawnId(po.id)}
-                      className={`pawn-pick-btn ${active ? 'selected' : ''}`}
-                      style={{
-                        borderColor: active ? po.color : '#e2e8f0',
-                        background: active ? po.lightBg : '#f8fafc'
-                      }}
-                    >
-                      <span
-                        className="pawn-pick-emoji"
-                        style={{
-                          width: '30px',
-                          height: '30px',
-                          borderRadius: '50%',
-                          background: po.gradient,
-                          color: '#fff',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
+        {/* =======================================================
+            PAINEL 3: CRIAR SALA / IDENTIFICAÇÃO + 4 PEÕES 3D
+           ======================================================= */}
+        {screen === 'setup' && (
+          <div className="center-stage-wrap">
+            <form className="mint-light-card setup-card" onSubmit={handleCreateRoom}>
+              <h2 className="mint-card-title">Criar Sala</h2>
+
+              <div className="setup-field-group">
+                <label>Identificação do Jogador</label>
+                <input
+                  type="text"
+                  className="mint-input"
+                  placeholder="Digite seu nome *"
+                  value={playerName}
+                  onChange={(e) => {
+                    setPlayerName(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  maxLength={22}
+                />
+              </div>
+
+              <div className="setup-field-group">
+                <label>Escolha sua turma *</label>
+                <select
+                  className="mint-input"
+                  value={playerClass}
+                  onChange={(e) => {
+                    setPlayerClass(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                >
+                  <option value="8º A">8º A</option>
+                  <option value="8º B">8º B</option>
+                </select>
+              </div>
+
+              <div className="setup-field-group">
+                <label>Escolha seu Peão para o Tabuleiro:</label>
+                <div className="pawns-4col-grid">
+                  {PAWN_OPTIONS.map((po) => {
+                    const isSelected = selectedPawnId === po.id;
+                    return (
+                      <button
+                        type="button"
+                        key={po.id}
+                        className={`pawn-card-option ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedPawnId(po.id)}
                       >
-                        <PawnVectorIcon type={po.iconType} size={16} color="#ffffff" />
+                        <img src={po.img} alt={po.label} className="pawn-card-img" />
+                        <span className="pawn-card-label">{po.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {formError && (
+                <div className="setup-error-banner">
+                  <AlertCircle size={16} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <button type="submit" className="btn-green-create-room">
+                Criar Sala (1 a 4 Jogadores)
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGoToJoinScreen}
+                className="btn-secondary-join-room"
+              >
+                Já tem um código? Entrar em uma Sala
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 4: ENTRAR EM UMA SALA (4 Caixas de Dígitos)
+           ======================================================= */}
+        {screen === 'join' && (
+          <div className="right-hero-column">
+            <form className="dark-glass-panel join-room-panel" onSubmit={handleJoinRoom}>
+              <h2 className="join-panel-title">Entrar em uma Sala</h2>
+              <p className="join-panel-sub">
+                Digite o código da sala para se juntar ao jogo.
+              </p>
+
+              <div className="code-4boxes-row" onPaste={handleDigitPaste}>
+                {joinDigits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={digitRefs[idx]}
+                    type="text"
+                    className="code-digit-box"
+                    value={digit}
+                    onChange={(e) => handleDigitChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                    maxLength={1}
+                  />
+                ))}
+              </div>
+
+              {formError && (
+                <div className="setup-error-banner" style={{ marginBottom: '0.9rem' }}>
+                  <AlertCircle size={16} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', alignItems: 'center' }}>
+                <button type="submit" className="btn-astro-pill">
+                  <span>Entrar na Sala</span>
+                  <ChevronRight size={24} strokeWidth={3} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setScreen('setup')}
+                  className="btn-link-back"
+                >
+                  Voltar para Criar Sala
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 5: AGUARDANDO JOGADORES (Lobby com 4 Slots)
+           ======================================================= */}
+        {screen === 'lobby' && (
+          <div className="center-stage-wrap">
+            <div className="dark-glass-panel lobby-glass-panel">
+              <div className="lobby-header-title">
+                <Users size={26} color="#67e8f9" />
+                <h2>Aguardando Jogadores</h2>
+              </div>
+              <p className="lobby-subtitle">
+                Compartilhe o código da sala com seus amigos!
+              </p>
+
+              {/* Código da Sala em Destaque */}
+              <button
+                type="button"
+                className="lobby-code-display"
+                onClick={handleCopyRoomCode}
+                title="Clique para copiar o código"
+              >
+                <span>{roomCode}</span>
+                {copiedCode ? <Check size={22} color="#4ade80" /> : <Copy size={22} color="#93c5fd" />}
+              </button>
+
+              {/* 4 Slots de Jogadores lado a lado */}
+              <div className="lobby-slots-4grid">
+                {[0, 1, 2, 3].map((slotIdx) => {
+                  const p = players[slotIdx];
+                  const pawnObj = p
+                    ? PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[0]
+                    : null;
+
+                  if (p) {
+                    return (
+                      <div key={p.id} className="lobby-slot-card filled">
+                        {roomRole === 'host' && !p.isHost && (
+                          <button
+                            type="button"
+                            className="slot-remove-btn"
+                            onClick={() => handleRemovePlayer(p.id)}
+                            title="Remover jogador"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                        <div className="slot-player-name">{p.name}</div>
+                        <div className="slot-player-turma">{p.turma}</div>
+                        <img
+                          src={pawnObj.img}
+                          alt={pawnObj.label}
+                          className="slot-pawn-img"
+                          onClick={() => handleCyclePawnInLobby(p.id)}
+                          title="Clique para trocar de peão"
+                        />
+                        <span className="slot-pawn-label">{pawnObj.label}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={slotIdx}
+                      className="lobby-slot-card empty"
+                      onClick={() => {
+                        if (roomRole === 'host') setShowAddLocalForm(true);
+                      }}
+                      style={{ cursor: roomRole === 'host' ? 'pointer' : 'default' }}
+                      title={
+                        roomRole === 'host'
+                          ? 'Clique para adicionar um jogador neste mesmo computador'
+                          : 'Aguardando jogador...'
+                      }
+                    >
+                      <div className="slot-dashed-circle">
+                        {roomRole === 'host' ? <UserPlus size={20} color="#94a3b8" /> : null}
+                      </div>
+                      <span className="slot-waiting-text">
+                        {roomRole === 'host' ? '+ Mesmo PC' : 'Aguardando...'}
                       </span>
-                      <span className="pawn-pick-name">{po.label}</span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
 
-              {formError && (
-                <div className="form-error-alert">
-                  {formError}
-                </div>
+              {/* Formulário rápido para adicionar colega no mesmo PC */}
+              {roomRole === 'host' && showAddLocalForm && players.length < 4 && (
+                <form className="add-local-inline-form" onSubmit={handleAddLocalPlayer}>
+                  <input
+                    type="text"
+                    placeholder="Nome do colega no mesmo PC"
+                    value={localAddName}
+                    onChange={(e) => setLocalAddName(e.target.value)}
+                    className="mint-input"
+                    maxLength={20}
+                    autoFocus
+                  />
+                  <select
+                    value={localAddClass}
+                    onChange={(e) => setLocalAddClass(e.target.value)}
+                    className="mint-input"
+                    style={{ maxWidth: '115px' }}
+                  >
+                    <option value="8º A">8º A</option>
+                    <option value="8º B">8º B</option>
+                  </select>
+                  <button type="submit" className="btn-green-small">
+                    Adicionar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddLocalForm(false)}
+                    className="btn-cancel-small"
+                  >
+                    Cancelar
+                  </button>
+                </form>
               )}
 
-              <div className="lobby-buttons-stack">
+              {roomRole === 'host' ? (
                 <button
                   type="button"
-                  onClick={handleCreateRoom}
-                  className="btn-play-green"
+                  onClick={handleStartMatchFromLobby}
+                  className="btn-lobby-start"
                 >
-                  <Play size={21} fill="currentColor" />
-                  <span>Criar Sala (1 a 4 Jogadores)</span>
+                  <span>Iniciar Jogo</span>
+                  <ChevronRight size={22} />
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!validateIdentity()) return;
-                    setJoinModalOpen(true);
-                  }}
-                  className="btn-join-room"
-                >
-                  <Users size={20} />
-                  <span>Entrar em uma Sala com Código</span>
-                </button>
-              </div>
+              ) : (
+                <div className="guest-waiting-pill">
+                  Conectado ({networkStatus}) • Aguardando o anfitrião iniciar a partida...
+                </div>
+              )}
             </div>
           </div>
-        </main>
-      )}
+        )}
 
-      {/* MODAL PARA DIGITAR O CÓDIGO DA SALA */}
-      {joinModalOpen && (
-        <div className="modal-backdrop" onClick={() => setJoinModalOpen(false)}>
-          <div
-            className="modal-content join-modal-box"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-              <h2 style={{ fontSize: '1.45rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Wifi size={24} color="#16a34a" />
-                Entrar na Sala de um Colega
-              </h2>
-              <button
-                onClick={() => setJoinModalOpen(false)}
-                className="btn-top"
-                style={{ background: '#1b4332', padding: '0.35rem 0.8rem' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
+        {/* =======================================================
+            PAINEL 6: TABULEIRO 3D EM ESPIRAL + DADO 3D + BARRA DE 4 JOGADORES
+           ======================================================= */}
+        {screen === 'playing' && (
+          <div className="playing-stage-container">
+            <div className="board-and-dice-row">
+              {/* Tabuleiro Espiral 3D Central com Peões posicionados nas 20 casas */}
+              <div className="spiral-board-wrapper">
+                <img
+                  src="/assets/tabuleiro_3d.png"
+                  alt="Tabuleiro Cidades Inteligentes"
+                  className="spiral-board-img"
+                />
 
-            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#334155', marginBottom: '1rem' }}>
-              Peça o <strong>Código de 4 dígitos</strong> para quem criou a sala e digite abaixo para conectar seu computador ao tabuleiro:
-            </p>
+                {/* Marcador Verde de Folha na casa do jogador da vez */}
+                {currentPlayer && SPIRAL_COORDS[currentPlayer.position] && (
+                  <div
+                    className="active-space-leaf-token"
+                    style={{
+                      left: `${SPIRAL_COORDS[currentPlayer.position].left}%`,
+                      top: `${SPIRAL_COORDS[currentPlayer.position].top}%`
+                    }}
+                    title={`Casa atual de ${currentPlayer.name}`}
+                  >
+                    <GreenLeafSVG size={18} />
+                  </div>
+                )}
 
-            <form onSubmit={handleJoinRoom}>
-              <input
-                type="text"
-                className="room-code-big-input"
-                placeholder="Ex: 4829"
-                value={joinCodeInput}
-                onChange={(e) => setJoinCodeInput(e.target.value.replace(/[^0-9a-zA-Z]/g, '').slice(0, 6))}
-                autoFocus
-              />
+                {/* Peões 3D de todos os jogadores na trilha */}
+                {players.map((p, idx) => {
+                  const coord = SPIRAL_COORDS[p.position] || SPIRAL_COORDS[0];
+                  const pawnObj =
+                    PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[idx % 4];
+                  // Pequeno deslocamento caso mais de 1 jogador esteja na mesma casa
+                  const sameSpacePlayers = players.filter((other) => other.position === p.position);
+                  const posInGroup = sameSpacePlayers.findIndex((other) => other.id === p.id);
+                  const offsetX = (posInGroup - (sameSpacePlayers.length - 1) / 2) * 2.8;
 
-              <button type="submit" className="btn-play-green" style={{ marginTop: '0.9rem' }}>
-                <ArrowRight size={22} />
-                <span>Conectar à Sala Agora</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================
-          TELA 2: SALA DE ESPERA (LOBBY ATÉ 4 JOGADORES)
-         ========================================================= */}
-      {screen === 'lobby' && (
-        <main className="welcome-wrap">
-          <div className="lobby-container-card">
-            <div className="lobby-top-banner">
-              <div>
-                <span className="tag-pill-green">SALA MULTIPLAYER ATIVA</span>
-                <h1 style={{ fontSize: '1.9rem', color: '#1b4332', marginTop: '0.3rem' }}>
-                  Sala de Espera • Cidades Inteligentes
-                </h1>
-                <p style={{ fontSize: '0.92rem', fontWeight: 700, color: '#475569' }}>
-                  Até 4 jogadores podem participar juntos! Compartilhe o código abaixo com outros computadores ou adicione jogadores neste PC.
-                </p>
-              </div>
-
-              <div className="room-code-showcase" onClick={handleCopyRoomCode}>
-                <span className="room-code-label">CÓDIGO DA SALA</span>
-                <div className="room-code-digits">{roomCode}</div>
-                <span className="room-code-copy-hint">
-                  {copiedCode ? 'Código copiado!' : 'Clique para copiar'}
-                </span>
-              </div>
-            </div>
-
-            {/* Grade de 4 Slots de Jogadores */}
-            <div className="lobby-slots-grid">
-              {[0, 1, 2, 3].map((slotIdx) => {
-                const p = players[slotIdx];
-                if (p) {
-                  const pawnObj = PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[0];
                   return (
                     <div
                       key={p.id}
-                      className="lobby-player-slot filled"
-                      style={{ borderColor: pawnObj.color }}
+                      className={`board-pawn-marker ${
+                        steppingPlayerId === p.id ? 'stepping' : ''
+                      } ${idx === currentTurnIdx ? 'is-turn' : ''}`}
+                      style={{
+                        left: `calc(${coord.left}% + ${offsetX}%)`,
+                        top: `${coord.top}%`
+                      }}
+                      title={`${p.name} (${pawnObj.label})`}
                     >
-                      <div className="slot-header-row">
-                        <span
-                          className="slot-player-badge"
-                          style={{ background: pawnObj.gradient }}
-                        >
-                          Jogador {slotIdx + 1}
-                        </span>
-                        {p.isHost ? (
-                          <span className="slot-origin-tag host">
-                            <Crown size={13} /> Líder da Sala
-                          </span>
-                        ) : p.isLocalOnHost ? (
-                          <span className="slot-origin-tag local">
-                            <Monitor size={13} /> Neste PC
-                          </span>
-                        ) : (
-                          <span className="slot-origin-tag online">
-                            <Wifi size={13} /> Online
-                          </span>
-                        )}
-                      </div>
+                      <img src={pawnObj.img} alt={p.name} className="board-pawn-3d-img" />
+                      <span className="board-pawn-name-tag">{p.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
 
-                      <div
-                        className="slot-Avatar-circle"
-                        style={{ background: pawnObj.gradient, borderColor: pawnObj.color, color: '#ffffff' }}
-                      >
-                        <PawnVectorIcon type={pawnObj.iconType} size={32} color="#ffffff" />
-                      </div>
+              {/* Painel Lateral Direito do Dado 3D + Botão "Lançar Dado" */}
+              <div className="dice-dock-card">
+                <div className="turn-player-badge">
+                  Vez de <strong>{currentPlayer.name}</strong>
+                </div>
 
-                      <div className="slot-player-name">{p.name}</div>
-                      <div className="slot-player-turma">Turma: {p.turma}</div>
+                <DiceFace3D value={diceValue} isRolling={isRolling} />
 
-                      {(roomRole === 'host' || p.id === myClientId) && (
-                        <div className="slot-mini-pawns">
-                          {PAWN_OPTIONS.map((po) => {
-                            const usedByOther = players.some(
-                              (other) => other.id !== p.id && other.pawnId === po.id
-                            );
-                            return (
-                              <button
-                                key={po.id}
-                                type="button"
-                                disabled={usedByOther}
-                                onClick={() => handleSelectPawnInLobby(p.id, po.id)}
-                                className={`mini-pawn-btn ${p.pawnId === po.id ? 'active' : ''}`}
-                                title={usedByOther ? `${po.label} (em uso)` : `Escolher ${po.label}`}
-                                style={{ color: po.color }}
-                              >
-                                <PawnVectorIcon type={po.iconType} size={15} color={po.color} />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                <button
+                  type="button"
+                  className="btn-roll-green"
+                  disabled={
+                    !canControlCurrentTurn ||
+                    isRolling ||
+                    isMovingPawn ||
+                    Boolean(activeEvent)
+                  }
+                  onClick={handleRollDiceClick}
+                >
+                  {isRolling
+                    ? 'Sorteando...'
+                    : isMovingPawn
+                    ? 'Avançando...'
+                    : 'Lançar Dado'}
+                </button>
+              </div>
+            </div>
 
-                      {roomRole === 'host' && !p.isHost && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePlayer(p.id)}
-                          className="slot-remove-btn"
-                        >
-                          <Trash2 size={13} /> Remover
-                        </button>
-                      )}
+            {/* Barra Inferior com os 4 Cards de Jogadores (Idêntica ao Painel 6) */}
+            <div className="bottom-players-bar">
+              {[0, 1, 2, 3].map((slotIdx) => {
+                const p = players[slotIdx];
+                if (!p) {
+                  return (
+                    <div key={slotIdx} className="hud-player-card inactive-slot">
+                      <span className="inactive-slot-label">Slot {slotIdx + 1} livre</span>
                     </div>
                   );
                 }
 
+                const pawnObj =
+                  PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[slotIdx % 4];
+                const isTurn = slotIdx === currentTurnIdx;
+
                 return (
-                  <div key={slotIdx} className="lobby-player-slot empty">
-                    <div className="empty-slot-circle">{slotIdx + 1}</div>
-                    <div className="empty-slot-title">Aguardando Jogador {slotIdx + 1}...</div>
-                    <p className="empty-slot-sub">
-                      Outro computador pode entrar com o código <strong>{roomCode}</strong>
-                    </p>
-                    {roomRole === 'host' && (
+                  <div
+                    key={p.id}
+                    className={`hud-player-card ${isTurn ? 'active-turn-card' : ''}`}
+                  >
+                    <img src={pawnObj.img} alt={pawnObj.label} className="hud-pawn-thumb" />
+                    <div className="hud-player-details">
+                      <div className="hud-player-name">{p.name}</div>
+                      <div className="hud-player-credits">
+                        <GreenLeafSVG size={18} />
+                        <span>{p.credits}</span>
+                        <span className="hud-puzzle-mini" title="Peças do Quebra-Cabeça">
+                          • 🧩 {p.puzzlePieces}/3
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 7: MODAL DE PERGUNTA (A, B, C + Botão Confirmar)
+           ======================================================= */}
+        {screen === 'playing' && activeEvent?.type === 'acao' && (
+          <div className="event-overlay-backdrop">
+            <div className="dark-glass-panel question-modal-card">
+              <div className="question-modal-header">
+                <div className="q-header-left">
+                  <GreenLeafSVG size={22} />
+                  <span>Pergunta • {activeEvent.playerName}</span>
+                </div>
+                <span className="q-header-counter">
+                  +{activeEvent.card.creditos} Créditos
+                </span>
+              </div>
+
+              <div className="question-white-box">
+                <p className="question-box-title">{activeEvent.card.pergunta}</p>
+
+                <div className="question-options-stack">
+                  {activeEvent.card.opcoes.map((optText, idx) => {
+                    const letter = ['A', 'B', 'C'][idx] || String(idx + 1);
+                    const isSelected = pendingOptionIdx === idx;
+                    return (
                       <button
                         type="button"
-                        onClick={() => setShowAddLocalForm(true)}
-                        className="btn-add-local-slot"
+                        key={idx}
+                        className={`q-option-row ${isSelected ? 'selected' : ''}`}
+                        disabled={!canControlCurrentTurn}
+                        onClick={() => setPendingOptionIdx(idx)}
                       >
-                        <UserPlus size={15} /> + Adicionar Neste PC
+                        <span className="q-option-circle">{letter}</span>
+                        <span className="q-option-label">{optText}</span>
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="btn-confirm-green"
+                disabled={!canControlCurrentTurn || pendingOptionIdx === null}
+                onClick={handleConfirmQuestionOption}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 8: MODAL DE CARTA DE AÇÃO (Verde) OU OPS! (Vermelho)
+           ======================================================= */}
+        {screen === 'playing' && activeEvent?.type === 'card_feedback' && (
+          <div className="event-overlay-backdrop">
+            <div
+              className={`action-feedback-frame ${
+                activeEvent.isPositive ? 'positive-frame' : 'negative-frame'
+              }`}
+            >
+              <div className="feedback-frame-header">
+                {activeEvent.isPositive ? (
+                  <>
+                    <GreenLeafSVG size={22} />
+                    <span>Carta de Ação</span>
+                  </>
+                ) : (
+                  <>
+                    <X size={24} color="#fb7185" strokeWidth={3} />
+                    <span>Ops!</span>
+                  </>
+                )}
+              </div>
+
+              <div className="feedback-inner-body">
+                <div className="feedback-ill-wrap">
+                  <img
+                    src={
+                      activeEvent.isPositive
+                        ? '/assets/card_progresso_ill.jpg'
+                        : '/assets/card_regresso_ill.jpg'
+                    }
+                    alt={activeEvent.title}
+                    className="feedback-ill-img"
+                  />
+                </div>
+
+                {activeEvent.passedStart && (
+                  <div className="passed-start-pill">
+                    🧩 Completou uma volta e ganhou +1 peça do Quebra-Cabeça!
+                  </div>
+                )}
+
+                <p className="feedback-desc-text">{activeEvent.message}</p>
+
+                <div
+                  className={`feedback-credits-delta ${
+                    activeEvent.isPositive ? 'delta-gain' : 'delta-loss'
+                  }`}
+                >
+                  {activeEvent.creditsDelta >= 0
+                    ? `Ganhe +${activeEvent.creditsDelta} Créditos Verdes!`
+                    : `Você perde ${activeEvent.creditsDelta} Créditos Verdes!`}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-astro-pill btn-ok-card"
+                  disabled={!canControlCurrentTurn}
+                  onClick={handleDismissFeedbackModal}
+                >
+                  <span>OK</span>
+                  <ChevronRight size={20} strokeWidth={3} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =======================================================
+            PAINEL 9: TELA DE VITÓRIA / QUEBRA-CABEÇA COMPLETO (3/3)
+           ======================================================= */}
+        {screen === 'result' && (
+          <div className="right-hero-column">
+            <div className="dark-glass-panel puzzle-result-panel">
+              <div className="puzzle-result-header">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Puzzle size={24} color="#4ade80" />
+                  <span>Quebra-Cabeça</span>
+                </div>
+                <span>3/3</span>
+              </div>
+
+              <div className="puzzle-3col-showcase">
+                {[1, 2, 3].map((num) => (
+                  <div key={num} className="puzzle-piece-frame">
+                    <img
+                      src={`/assets/quebra_cabeca_${num}.jpg`}
+                      alt={`Peça ${num} Cidades Inteligentes`}
+                      className="puzzle-piece-img"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {winnerPlayer && (
+                <p className="winner-congrats-line">
+                  🎉 <strong>{winnerPlayer.name}</strong> ({winnerPlayer.turma}) venceu com{' '}
+                  <strong>{winnerPlayer.credits} Créditos Verdes</strong> e liberou XP na Loja AstroLearn!
+                </p>
+              )}
+
+              <button
+                type="button"
+                className="btn-confirm-green"
+                onClick={() => {
+                  if (roomRole === 'host') {
+                    handleStartMatchFromLobby();
+                  } else {
+                    handleLeaveRoom();
+                  }
+                }}
+              >
+                Quebra-cabeça completo! (Jogar Novamente)
+              </button>
+
+              <div className="result-secondary-btns">
+                <button
+                  type="button"
+                  className="top-pill-btn"
+                  onClick={() => setShowRankingModal(true)}
+                >
+                  <Trophy size={15} color="#facc15" />
+                  <span>Ver Rankings</span>
+                </button>
+                <button
+                  type="button"
+                  className="top-pill-btn"
+                  onClick={handleLeaveRoom}
+                >
+                  <Home size={15} />
+                  <span>Início</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* MODAL DO QUEBRA-CABEÇA DURANTE A PARTIDA */}
+      {showPuzzleModal && (
+        <div className="event-overlay-backdrop" onClick={() => setShowPuzzleModal(false)}>
+          <div
+            className="dark-glass-panel puzzle-result-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="puzzle-result-header">
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Puzzle size={24} color="#4ade80" />
+                <span>Quebra-Cabeça de {currentPlayer.name}</span>
+              </div>
+              <span>{currentPlayer.puzzlePieces}/3</span>
+            </div>
+
+            <div className="puzzle-3col-showcase">
+              {[1, 2, 3].map((num) => {
+                const unlocked = currentPlayer.puzzlePieces >= num || isGameFinished;
+                return (
+                  <div key={num} className="puzzle-piece-frame">
+                    {unlocked ? (
+                      <img
+                        src={`/assets/quebra_cabeca_${num}.jpg`}
+                        alt={`Peça ${num}`}
+                        className="puzzle-piece-img"
+                      />
+                    ) : (
+                      <div className="puzzle-piece-locked">
+                        <Puzzle size={28} color="#64748b" />
+                        <span>{num}ª Volta</span>
+                      </div>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {roomRole === 'host' && showAddLocalForm && players.length < 4 && (
-              <form className="add-local-bar" onSubmit={handleAddLocalPlayer}>
-                <span style={{ fontWeight: 800, color: '#1b4332', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Monitor size={16} /> Novo Jogador neste PC:
-                </span>
-                <input
-                  type="text"
-                  placeholder="Nome do colega *"
-                  value={localAddName}
-                  onChange={(e) => setLocalAddName(e.target.value)}
-                  className="field-input"
-                  style={{ margin: 0, maxWidth: '220px', padding: '0.55rem 0.85rem' }}
-                  maxLength={22}
-                  autoFocus
-                />
-                <select
-                  value={localAddClass}
-                  onChange={(e) => setLocalAddClass(e.target.value)}
-                  className="field-input"
-                  style={{ margin: 0, maxWidth: '150px', padding: '0.55rem 0.85rem' }}
-                >
-                  <option value="8º A">Turma 8º A</option>
-                  <option value="8º B">Turma 8º B</option>
-                </select>
-                <button type="submit" className="btn-top" style={{ background: '#16a34a' }}>
-                  <Check size={16} /> Adicionar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddLocalForm(false)}
-                  className="btn-top"
-                  style={{ background: '#64748b' }}
-                >
-                  Cancelar
-                </button>
-              </form>
-            )}
-
-            <div className="lobby-footer-actions">
-              {roomRole === 'host' ? (
-                <button
-                  type="button"
-                  onClick={handleStartMatchFromLobby}
-                  className="btn-play-green"
-                  style={{ maxWidth: '420px', fontSize: '1.25rem' }}
-                >
-                  <Play size={22} fill="currentColor" />
-                  <span>
-                    Iniciar Partida com {players.length}{' '}
-                    {players.length === 1 ? 'Jogador' : 'Jogadores'}!
-                  </span>
-                </button>
-              ) : (
-                <div className="guest-waiting-box">
-                  <Sparkles size={20} color="#16a34a" />
-                  <span>
-                    Você está conectado na sala <strong>{roomCode}</strong>! Aguardando o líder iniciar a partida...
-                  </span>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              className="btn-confirm-green"
+              onClick={() => setShowPuzzleModal(false)}
+            >
+              Voltar ao Tabuleiro
+            </button>
           </div>
-        </main>
+        </div>
       )}
 
-      {/* =========================================================
-          TELA 3: PARTIDA EM ANDAMENTO (TABULEIRO + DADO 3D + CARTAS)
-         ========================================================= */}
-      {screen === 'playing' && (
-        <main className="game-layout">
-          {/* Lado Esquerdo: Tabuleiro Oficial Cidades Inteligentes */}
-          <section className="board-stage-box">
-            {/* Barra de Jogadores da Partida (1 a 4 Jogadores) */}
-            <div className="players-scoreboard-strip">
-              {players.map((p, idx) => {
-                const pawnObj = PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[0];
-                const isTurn = idx === currentTurnIdx && !isGameFinished;
-                return (
-                  <div
-                    key={p.id}
-                    className={`player-score-card ${isTurn ? 'active-turn' : ''}`}
-                    style={{
-                      borderColor: isTurn ? pawnObj.color : 'rgba(255,255,255,0.18)'
-                    }}
-                  >
-                    <div
-                      className="player-score-avatar"
-                      style={{ background: pawnObj.gradient, color: '#ffffff' }}
-                    >
-                      <PawnVectorIcon type={pawnObj.iconType} size={20} color="#ffffff" />
-                    </div>
-                    <div className="player-score-info">
-                      <div className="player-score-name-row">
-                        <span className="player-score-name">{p.name}</span>
-                        <span className="player-score-class">{p.turma}</span>
-                      </div>
-                      <div className="player-score-metrics">
-                        <span className="metric-pill credits">Créditos: {p.credits}</span>
-                        <span className="metric-pill puzzle">Peças: {p.puzzlePieces}/3</span>
-                        <span className="metric-pill space">Casa {p.position}</span>
-                      </div>
-                    </div>
-                    {isTurn && <span className="turn-live-dot" title="Jogador da vez" />}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Moldura do Tabuleiro com Peões Passo a Passo */}
-            <div className="board-outer-padding">
-              <div className="board-image-container">
-                <img
-                  src="/assets/tabuleiro_cidades.jpg"
-                  alt="Tabuleiro Cidades Inteligentes"
-                  className="board-main-img"
-                />
-
-                {/* Marcadores numerados nas 20 casas do perímetro */}
-                {BOARD_SPACES.map((sp) => {
-                  const hasActivePlayerHere = currentPlayer.position === sp.index;
-                  return (
-                    <div
-                      key={sp.index}
-                      className={`space-dot ${hasActivePlayerHere ? 'current' : ''}`}
-                      style={{ left: `${sp.x}%`, top: `${sp.y}%` }}
-                      title={`Casa ${sp.index}: ${sp.nome}`}
-                    >
-                      {sp.index}
-                    </div>
-                  );
-                })}
-
-                {/* Peões de todos os jogadores (1 a 4) com separação automática na mesma casa */}
-                {players.map((p, idx) => {
-                  const pawnObj = PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[0];
-                  const coords = getPawnCoordinates(p);
-                  const isCurrentTurnPawn = idx === currentTurnIdx;
-                  const isHopping = steppingPlayerId === p.id && isMovingPawn;
-
-                  return (
-                    <div
-                      key={p.id}
-                      className={`player-pawn-marker ${isCurrentTurnPawn ? 'active-pawn' : ''} ${
-                        isHopping ? 'hopping' : ''
-                      }`}
-                      style={{
-                        left: coords.left,
-                        top: coords.top,
-                        zIndex: isCurrentTurnPawn ? 25 : 15 + idx
-                      }}
-                    >
-                      <div
-                        className="pawn-pin-token"
-                        style={{
-                          background: pawnObj.gradient,
-                          borderColor: isCurrentTurnPawn ? '#fef08a' : '#ffffff',
-                          color: '#ffffff'
-                        }}
-                      >
-                        <PawnVectorIcon type={pawnObj.iconType} size={20} color="#ffffff" />
-                      </div>
-                      <div
-                        className="pawn-name-tag"
-                        style={{
-                          background: isCurrentTurnPawn ? '#0f172a' : 'rgba(15, 23, 42, 0.85)',
-                          borderColor: pawnObj.color
-                        }}
-                      >
-                        {p.name.slice(0, 10)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* Lado Direito: Controle do Dado 3D + Cartas + Quebra-Cabeça */}
-          <aside className="side-column">
-            {/* Caixa do Dado e Controle de Vez */}
-            {!isGameFinished && (
-              <div className="dice-control-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <DiceFace value={diceValue} isRolling={isRolling} />
-
-                  <div>
-                    <div className="turn-badge-header">
-                      <PawnVectorIcon type={activePawnObj.iconType} size={14} color="#d8f3dc" />
-                      <span>
-                        Vez de <strong>{currentPlayer.name}</strong> ({currentPlayer.turma})
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: '1.12rem', fontWeight: 700, marginTop: '0.2rem' }}>
-                      {isRolling
-                        ? 'Sorteando número no dado...'
-                        : isMovingPawn
-                        ? `Andando pelo tabuleiro (${diceValue} ${diceValue === 1 ? 'casa' : 'casas'})...`
-                        : waitingForActionAnswer
-                        ? 'Responda à Carta de Ação abaixo!'
-                        : turnReadyToAdvance
-                        ? extraRollGranted
-                          ? 'Bônus! Você ganhou mais uma jogada!'
-                          : 'Jogada concluída!'
-                        : 'Lance o dado para avançar!'}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#b7e4c7', fontWeight: 700 }}>
-                      Casa atual: <strong>{currentPlayer.position} ({currentSpace.nome})</strong> • Volta {Math.min(3, currentPlayer.puzzlePieces + 1)}/3
-                    </div>
-                  </div>
-                </div>
-
-                {/* Botões de Ação da Vez */}
-                <div className="dice-action-buttons">
-                  {!turnReadyToAdvance ? (
-                    <button
-                      onClick={handleRollDiceClick}
-                      disabled={
-                        isRolling ||
-                        isMovingPawn ||
-                        waitingForActionAnswer ||
-                        !canControlCurrentTurn
-                      }
-                      className="btn-play-green"
-                      style={{ width: '100%', padding: '0.85rem 1.4rem', fontSize: '1.12rem' }}
-                    >
-                      <Dices size={22} />
-                      <span>
-                        {!canControlCurrentTurn
-                          ? `Aguardando ${currentPlayer.name} jogar...`
-                          : isRolling
-                          ? 'Girando Dado...'
-                          : isMovingPawn
-                          ? 'Movendo Peão...'
-                          : waitingForActionAnswer
-                          ? 'Responda a Carta Abaixo'
-                          : 'Lançar Dado (1 a 6)'}
-                      </span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={
-                        players.length === 1 && !extraRollGranted
-                          ? handleRollDiceClick
-                          : handleNextTurnClick
-                      }
-                      disabled={!canControlCurrentTurn && roomRole !== 'host'}
-                      className="btn-next-turn"
-                    >
-                      {extraRollGranted ? (
-                        <>
-                          <Dices size={21} />
-                          <span>Jogar Dado Novamente (Bônus)</span>
-                        </>
-                      ) : players.length === 1 ? (
-                        <>
-                          <Dices size={21} />
-                          <span>Lançar Dado Novamente</span>
-                        </>
-                      ) : (
-                        <>
-                          <ArrowRight size={21} />
-                          <span>
-                            Passar a Vez para {players[(currentTurnIdx + 1) % players.length]?.name}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Tela de Fim de Jogo e Pódio quando alguém completa as 3 peças do Quebra-Cabeça */}
-            {isGameFinished && (
-              <div
-                className="game-card-frame progresso"
-                style={{ background: 'linear-gradient(180deg, #2d6a4f, #1b4332)' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.65rem' }}>
-                  <Sparkles size={28} color="#facc15" />
-                  <h2 style={{ fontSize: '1.45rem' }}>
-                    Quebra-Cabeça Completo! Fim da Partida!
-                  </h2>
-                </div>
-
-                <div className="card-inner-white" style={{ marginBottom: '1rem' }}>
-                  <p style={{ fontWeight: 900, fontSize: '1.05rem', marginBottom: '0.75rem', color: '#1b4332' }}>
-                    Vitória de <strong>{winnerPlayer?.name}</strong> ({winnerPlayer?.turma}) com{' '}
-                    <strong>{winnerPlayer?.credits} Créditos Verdes</strong>!
-                  </p>
-
-                  {/* Pódio dos Jogadores da Sala */}
-                  <div className="match-podium-list">
-                    {[...players]
-                      .sort((a, b) => {
-                        if (b.puzzlePieces !== a.puzzlePieces) return b.puzzlePieces - a.puzzlePieces;
-                        return b.credits - a.credits;
-                      })
-                      .map((p, idx) => {
-                        const pawnObj = PAWN_OPTIONS.find((po) => po.id === p.pawnId) || PAWN_OPTIONS[0];
-                        return (
-                          <div key={p.id} className="podium-row">
-                            <span className="podium-rank">{idx + 1}º</span>
-                            <span
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '50%',
-                                background: pawnObj.gradient,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff'
-                              }}
-                            >
-                              <PawnVectorIcon type={pawnObj.iconType} size={15} color="#ffffff" />
-                            </span>
-                            <div style={{ flex: 1 }}>
-                              <strong>{p.name}</strong> <small>({p.turma})</small>
-                            </div>
-                            <span className="podium-credits">
-                              {p.credits} créditos • +{Math.max(80, (p.credits || 0) * 50 + (p.puzzlePieces || 0) * 100)} XP
-                            </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: '0.86rem',
-                      lineHeight: 1.5,
-                      fontWeight: 700,
-                      color: '#1e293b',
-                      background: '#f0fdf4',
-                      padding: '0.75rem',
-                      borderRadius: '12px',
-                      border: '1.5px solid #86efac',
-                      marginTop: '0.75rem'
-                    }}
-                  >
-                    <strong>Conceito Oficial Desbloqueado:</strong> "{SMART_CITIES_DEFINITION}"
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                  {roomRole === 'host' && (
-                    <button
-                      onClick={handleStartMatchFromLobby}
-                      className="btn-top"
-                      style={{ background: '#16a34a' }}
-                    >
-                      <RotateCcw size={16} /> Jogar Novamente com a Sala
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowRankingModal(true)}
-                    className="btn-top"
-                    style={{ background: '#0284c7' }}
-                  >
-                    <Trophy size={16} /> Ver Rankings (8º A / 8º B)
-                  </button>
-                  <button
-                    onClick={handleLeaveRoom}
-                    className="btn-top"
-                    style={{ background: '#7209b7' }}
-                  >
-                    <UserPlus size={16} /> Menu Inicial
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* CARTA SORTEADA: PROGRESSO OU REGRESSO */}
-            {!isGameFinished && activeEvent?.type === 'pr' && (
-              <div
-                className={`game-card-frame ${
-                  activeEvent.card.subtipo === 'Progresso' ? 'progresso' : 'regresso'
-                }`}
-              >
-                {activeEvent.passedStart && (
-                  <div className="passed-start-banner">
-                    Passou pelo INÍCIO e conquistou +1 peça do Quebra-Cabeça!
-                  </div>
-                )}
-
-                <div className="card-top-meta">
-                  <div>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 900, opacity: 0.92 }}>
-                      STEAM+ • CARTA DE {activeEvent.playerName?.toUpperCase()}
-                    </div>
-                    <span className="card-type-pill">{activeEvent.card.subtipo}</span>
-                  </div>
-
-                  <div className="card-credits-circle">
-                    <span>
-                      {activeEvent.card.creditos > 0
-                        ? `+${activeEvent.card.creditos}`
-                        : activeEvent.card.creditos}
-                    </span>
-                    <small style={{ fontSize: '0.55rem' }}>créditos</small>
-                  </div>
-                </div>
-
-                <div className="card-inner-white">
-                  <p style={{ fontSize: '1.06rem', fontWeight: 800, lineHeight: 1.45, marginBottom: '0.6rem' }}>
-                    “{activeEvent.card.texto}”
-                  </p>
-                  <div
-                    style={{
-                      fontSize: '0.88rem',
-                      fontWeight: 800,
-                      color: activeEvent.card.creditos > 0 ? '#15803d' : '#b91c1c'
-                    }}
-                  >
-                    {activeEvent.card.creditos > 0
-                      ? `Atitude sustentável! ${activeEvent.playerName} recebeu +${activeEvent.card.creditos} Créditos Verdes.`
-                      : `Impacto negativo! ${activeEvent.playerName} perdeu ${Math.abs(activeEvent.card.creditos)} Créditos Verdes.`}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* CARTA DE AÇÃO (QUIZ, CRIATIVIDADE, DEBATE OU AÇÃO CIDADÃ) */}
-            {!isGameFinished && activeEvent?.type === 'acao' && (
-              <div className="game-card-frame acao">
-                {activeEvent.passedStart && (
-                  <div className="passed-start-banner">
-                    Passou pelo INÍCIO e conquistou +1 peça do Quebra-Cabeça!
-                  </div>
-                )}
-
-                <div className="card-top-meta">
-                  <div>
-                    <div style={{ fontSize: '0.76rem', fontWeight: 900 }}>
-                      STEAM+ • DESAFIO PARA {activeEvent.playerName?.toUpperCase()}
-                    </div>
-                    <span className="card-type-pill">{activeEvent.card.categoria}</span>
-                  </div>
-
-                  <div className="card-credits-circle">
-                    <span>+{activeEvent.card.creditos}</span>
-                    <small style={{ fontSize: '0.55rem' }}>créditos</small>
-                  </div>
-                </div>
-
-                <div className="card-inner-white">
-                  <p style={{ fontSize: '1.02rem', fontWeight: 800, lineHeight: 1.42, marginBottom: '0.55rem' }}>
-                    {activeEvent.card.pergunta}
-                  </p>
-
-                  {!canControlCurrentTurn && !activeEvent.answered && (
-                    <div
-                      style={{
-                        background: '#fffbeb',
-                        color: '#b45309',
-                        padding: '0.45rem 0.75rem',
-                        borderRadius: '10px',
-                        fontSize: '0.82rem',
-                        fontWeight: 800,
-                        marginBottom: '0.45rem',
-                        border: '1px solid #fde68a'
-                      }}
-                    >
-                      Aguardando <strong>{currentPlayer.name}</strong> escolher uma alternativa...
-                    </div>
-                  )}
-
-                  {activeEvent.card.opcoes.map((opTexto, idx) => {
-                    let cls = 'action-option-btn';
-                    if (activeEvent.answered) {
-                      if (idx === activeEvent.card.correta) cls += ' correct';
-                      else if (idx === activeEvent.chosenIdx) cls += ' wrong';
-                    }
-
-                    return (
-                      <button
-                        key={idx}
-                        className={cls}
-                        disabled={activeEvent.answered || !canControlCurrentTurn}
-                        onClick={() => handleAnswerCardClick(idx)}
-                      >
-                        {opTexto}
-                      </button>
-                    );
-                  })}
-
-                  {activeEvent.answered && (
-                    <div
-                      style={{
-                        marginTop: '0.85rem',
-                        padding: '0.75rem 0.9rem',
-                        borderRadius: '12px',
-                        background: activeEvent.isCorrect ? '#f0fdf4' : '#fef2f2',
-                        border: `1.5px solid ${activeEvent.isCorrect ? '#86efac' : '#fca5a5'}`,
-                        fontSize: '0.88rem',
-                        fontWeight: 700,
-                        color: activeEvent.isCorrect ? '#14532d' : '#7f1d1d'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 900, marginBottom: '0.25rem' }}>
-                        {activeEvent.isCorrect ? (
-                          <>
-                            <CheckCircle2 size={18} color="#16a34a" />
-                            <span>
-                              Mandou bem! {activeEvent.playerName} ganhou +{activeEvent.card.creditos} Créditos Verdes!
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={18} color="#dc2626" />
-                            <span>Resposta incorreta! Nenhum crédito ganho nesta carta.</span>
-                          </>
-                        )}
-                      </div>
-                      <p>{activeEvent.card.explicacao}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* EVENTO DE CASA ESPECIAL (INÍCIO, DESCANSO, PARQUE, BIKE, LIXO, STEAM) */}
-            {!isGameFinished && activeEvent?.type === 'space' && (
-              <div
-                className={`game-card-frame ${
-                  activeEvent.spaceType === 'lixo_volte2' ? 'regresso' : 'progresso'
-                }`}
-              >
-                {activeEvent.passedStart && (
-                  <div className="passed-start-banner">
-                    Passou pelo INÍCIO e conquistou +1 peça do Quebra-Cabeça!
-                  </div>
-                )}
-                <h3 style={{ fontSize: '1.18rem', marginBottom: '0.6rem' }}>{activeEvent.title}</h3>
-                <div className="card-inner-white">
-                  <p style={{ fontSize: '0.95rem', fontWeight: 700, lineHeight: 1.48 }}>
-                    {activeEvent.message}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* QUEBRA-CABEÇA CIDADES INTELIGENTES (3 PEÇAS = 3 VOLTAS) */}
-            <div className="puzzle-box">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-                <span style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '1.02rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <Puzzle size={19} color="#facc15" />
-                  Quebra-Cabeça de {currentPlayer.name}
-                </span>
-                <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#95d5b2' }}>
-                  {currentPlayer.puzzlePieces}/3 peças (1 por volta)
-                </span>
-              </div>
-
-              <div className="puzzle-pieces-grid">
-                {[1, 2, 3].map((pieceNum) => {
-                  const unlocked = currentPlayer.puzzlePieces >= pieceNum || isGameFinished;
-                  return (
-                    <div key={pieceNum} className="puzzle-slot">
-                      {unlocked ? (
-                        <img
-                          src={`/assets/quebra_cabeca_${pieceNum}.jpg`}
-                          alt={`Peça ${pieceNum} do Quebra-Cabeça`}
-                        />
-                      ) : (
-                        <div className="puzzle-locked-label">
-                          Peça {pieceNum} bloqueada
-                          <br />
-                          <small>({pieceNum}ª volta)</small>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
-        </main>
-      )}
-
-      {/* MODAL DOS DOIS RANKINGS SEPARADOS (8º A e 8º B) */}
+      {/* MODAL DOS RANKINGS SEPARADOS (8º A e 8º B — renova a cada 2h, sem botão de limpar) */}
       {showRankingModal && (
-        <div className="modal-backdrop" onClick={() => setShowRankingModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.55rem' }}>
-                <Trophy size={26} color="#eab308" />
-                Rankings Cidades Inteligentes • 8º A e 8º B
+        <div className="event-overlay-backdrop" onClick={() => setShowRankingModal(false)}>
+          <div
+            className="dark-glass-panel ranking-modal-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ranking-modal-top">
+              <h2>
+                <Trophy size={26} color="#facc15" />
+                <span>Rankings Cidades Inteligentes • 8º A e 8º B</span>
               </h2>
               <button
+                type="button"
                 onClick={() => setShowRankingModal(false)}
-                className="btn-top"
-                style={{ background: '#1b4332' }}
+                className="top-pill-btn"
               >
                 <X size={18} /> Fechar
               </button>
             </div>
 
-            <div className="rankings-2col">
+            <div className="rankings-2col-grid">
               {/* Coluna 8º A */}
-              <div className="rank-col-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Award size={19} color="#15803d" />
-                    <span>Ranking 8º A</span>
-                  </h3>
-                </div>
-
+              <div className="rank-col-box">
+                <h3>
+                  <Award size={19} color="#4ade80" />
+                  <span>Turma 8º A</span>
+                </h3>
                 {ranking8A.length === 0 ? (
-                  <p style={{ textAlign: 'center', padding: '1.5rem 0', opacity: 0.65, fontWeight: 700 }}>
-                    Nenhum aluno do 8º A registrado ainda.
-                  </p>
+                  <p className="empty-rank-text">Nenhum aluno do 8º A jogou nas últimas 2 horas.</p>
                 ) : (
                   ranking8A.map((r, i) => (
-                    <div key={r.id} className={`rank-row ${i === 0 ? 'first' : ''}`}>
+                    <div key={r.id} className={`rank-item-row ${i === 0 ? 'top1' : ''}`}>
                       <div>
-                        <div style={{ fontWeight: 800 }}>
+                        <div className="rank-item-name">
                           {i + 1}º • {r.name}
                         </div>
-                        <div style={{ fontSize: '0.78rem', opacity: 0.75, fontWeight: 700 }}>
+                        <div className="rank-item-sub">
                           {r.puzzlePieces ?? 3}/3 Peças • {r.turns} rodadas
                         </div>
                       </div>
-                      <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '1.1rem', color: '#2d6a4f' }}>
-                        {r.credits} créditos
-                      </div>
+                      <div className="rank-item-credits">{r.credits} créditos</div>
                     </div>
                   ))
                 )}
               </div>
 
               {/* Coluna 8º B */}
-              <div className="rank-col-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Award size={19} color="#15803d" />
-                    <span>Ranking 8º B</span>
-                  </h3>
-                </div>
-
+              <div className="rank-col-box">
+                <h3>
+                  <Award size={19} color="#4ade80" />
+                  <span>Turma 8º B</span>
+                </h3>
                 {ranking8B.length === 0 ? (
-                  <p style={{ textAlign: 'center', padding: '1.5rem 0', opacity: 0.65, fontWeight: 700 }}>
-                    Nenhum aluno do 8º B registrado ainda.
-                  </p>
+                  <p className="empty-rank-text">Nenhum aluno do 8º B jogou nas últimas 2 horas.</p>
                 ) : (
                   ranking8B.map((r, i) => (
-                    <div key={r.id} className={`rank-row ${i === 0 ? 'first' : ''}`}>
+                    <div key={r.id} className={`rank-item-row ${i === 0 ? 'top1' : ''}`}>
                       <div>
-                        <div style={{ fontWeight: 800 }}>
+                        <div className="rank-item-name">
                           {i + 1}º • {r.name}
                         </div>
-                        <div style={{ fontSize: '0.78rem', opacity: 0.75, fontWeight: 700 }}>
+                        <div className="rank-item-sub">
                           {r.puzzlePieces ?? 3}/3 Peças • {r.turns} rodadas
                         </div>
                       </div>
-                      <div style={{ fontFamily: 'Fredoka, sans-serif', fontWeight: 700, fontSize: '1.1rem', color: '#2d6a4f' }}>
-                        {r.credits} créditos
-                      </div>
+                      <div className="rank-item-credits">{r.credits} créditos</div>
                     </div>
                   ))
                 )}
